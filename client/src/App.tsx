@@ -22,6 +22,11 @@ import AdminDashboardPage from "./pages/AdminDashboardPage";
 import HiddenGemsPage from "./pages/HiddenGemsPage";
 import HiddenGemsOwnerLoginPage from "./pages/HiddenGemsOwnerLoginPage";
 import HiddenGemsOwnerPortal from "./pages/HiddenGemsOwnerPortal";
+import VenueHostPortal from "./pages/VenueHostPortal";
+import AddVenuePage from "./pages/AddVenuePage";
+import VenueDetailPage from "./pages/VenueDetailPage";
+import VenueListPage from "./pages/VenueListPage";
+import RestaurantListPage from "./pages/RestaurantListPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +45,7 @@ const App = () => (
           <Route path="/nightlife/:venueId" element={<NightlifeDetail />} />
           <Route path="/hotels" element={<HotelListPage />} />
           <Route path="/hotels/:hotelId" element={<HotelDetailPage />} />
+          <Route path="/restaurants" element={<RestaurantListPage />} />
           <Route path="/medical" element={<MedicalPage />} />
           <Route path="/doctor-login" element={<DoctorLoginPage />} />
           <Route path="/doctor-portal" element={<DoctorPortal />} />
@@ -49,6 +55,10 @@ const App = () => (
           <Route path="/admin-dashboard/*" element={<AdminDashboardPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/venue-host-portal" element={<VenueHostPortal />} />
+          <Route path="/venue-host/add-venue" element={<AddVenuePage />} />
+          <Route path="/venues" element={<VenueListPage />} />
+          <Route path="/venues/:venueId" element={<VenueDetailPage />} />
           <Route path="/hidden-gems" element={<HiddenGemsPage />} />
           <Route path="/hidden-gems-owner-login" element={<HiddenGemsOwnerLoginPage />} />
           <Route path="/hidden-gems-owner-portal/*" element={<HiddenGemsOwnerPortal />} />

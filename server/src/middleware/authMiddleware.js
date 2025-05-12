@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Doctor = require('../models/Doctor');
 const Organizer = require('../models/Organizer');
+const VenueHost = require('../models/VenueHost');
 const Admin = require('../models/Admin');
 const Credentials = require('../models/Credentials');
 
@@ -40,6 +41,9 @@ exports.authenticate = async (req, res, next) => {
         break;
       case 'organizer':
         user = await Organizer.findById(id);
+        break;
+      case 'venue-host':
+        user = await VenueHost.findById(id);
         break;
       case 'admin':
         user = await Admin.findById(id);

@@ -14,11 +14,11 @@ exports.register = async (req, res) => {
     const { userType } = req.body;
     
     // Validate user type
-    if (!['user', 'doctor', 'organizer'].includes(userType)) {
+    if (!['user', 'doctor', 'organizer', 'venue-host'].includes(userType)) {
       console.log(`[AUTH CONTROLLER] Invalid user type: ${userType}`);
       return res.status(400).json({ 
         success: false, 
-        message: 'Invalid user type. Must be user, doctor, or organizer' 
+        message: 'Invalid user type. Must be user, doctor, organizer, or venue-host' 
       });
     }
     
@@ -46,6 +46,15 @@ exports.register = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Organizers must provide company name'
+      });
+    }
+    
+    // Additional validation for venue hosts
+    if (userType === 'venue-host' && (!req.body.venueName || !req.body.venueType)) {
+      console.log('[AUTH CONTROLLER] Missing venue-host-specific fields');
+      return res.status(400).json({
+        success: false,
+        message: 'Venue hosts must provide venue name and venue type'
       });
     }
     

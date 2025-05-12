@@ -10,7 +10,7 @@ import {
   MapPin,
   Building,
   Image,
-  Hotel,
+  Utensils,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -31,47 +31,47 @@ interface Venue {
   };
 }
 
-const HotelListPage: React.FC = () => {
+const RestaurantListPage: React.FC = () => {
   const navigate = useNavigate();
-  const [hotels, setHotels] = useState<Venue[]>([]);
+  const [restaurants, setRestaurants] = useState<Venue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState('');
 
   useEffect(() => {
-    const fetchHotels = async () => {
+    const fetchRestaurants = async () => {
       try {
         setIsLoading(true);
         // Get all public venues
         const response = await api.get('/venues');
         
         if (response.success) {
-          // Filter only hotel type venues
-          const hotelVenues = response.data.venues.filter(
-            (venue: Venue) => venue.type === 'hotel' || venue.type === 'resort'
+          // Filter only restaurant type venues
+          const restaurantVenues = response.data.venues.filter(
+            (venue: Venue) => venue.type === 'restaurant'
           );
-          setHotels(hotelVenues || []);
+          setRestaurants(restaurantVenues || []);
         } else {
-          toast.error('Failed to load hotels');
+          toast.error('Failed to load restaurants');
         }
       } catch (error) {
-        console.error('Error fetching hotels:', error);
-        toast.error('An error occurred while loading hotels');
+        console.error('Error fetching restaurants:', error);
+        toast.error('An error occurred while loading restaurants');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchHotels();
+    fetchRestaurants();
   }, []);
 
-  const filteredHotels = hotels.filter(hotel => {
+  const filteredRestaurants = restaurants.filter(restaurant => {
     const matchesSearch = searchTerm === '' || 
-      hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      hotel.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      restaurant.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesLocation = location === 'all' || location === '' || 
-      hotel.location.toLowerCase().includes(location.toLowerCase());
+      restaurant.location.toLowerCase().includes(location.toLowerCase());
     
     return matchesSearch && matchesLocation;
   });
@@ -80,15 +80,15 @@ const HotelListPage: React.FC = () => {
     navigate(`/venues/${venueId}`);
   };
 
-  const uniqueLocations = [...new Set(hotels.map(hotel => hotel.location))];
+  const uniqueLocations = [...new Set(restaurants.map(restaurant => restaurant.location))];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Explore Hotels</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Explore Restaurants</h1>
           <p className="text-gray-600">
-            Discover the perfect hotels and resorts for your stay
+            Discover the perfect dining experience for your visit
           </p>
         </div>
 
@@ -99,7 +99,7 @@ const HotelListPage: React.FC = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
                 <Input
-                  placeholder="Search hotels by name or description"
+                  placeholder="Search restaurants by name or description"
                   className="pl-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -132,58 +132,58 @@ const HotelListPage: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
           </div>
-        ) : filteredHotels.length === 0 ? (
+        ) : filteredRestaurants.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <Hotel className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-700 mb-2">No Hotels Found</h3>
+            <Utensils className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 mb-2">No Restaurants Found</h3>
             <p className="text-gray-500 max-w-md mx-auto">
               {searchTerm || location
-                ? "No hotels match your search criteria. Try adjusting your filters."
-                : "There are no hotels available at the moment. Please check back later."}
+                ? "No restaurants match your search criteria. Try adjusting your filters."
+                : "There are no restaurants available at the moment. Please check back later."}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredHotels.map((hotel) => (
-              <Card key={hotel._id} className="overflow-hidden h-full flex flex-col">
+            {filteredRestaurants.map((restaurant) => (
+              <Card key={restaurant._id} className="overflow-hidden h-full flex flex-col">
                 <div className="h-48 bg-gray-200 relative">
-                  {hotel.imageUrl ? (
+                  {restaurant.imageUrl ? (
                     <img 
-                      src={hotel.imageUrl} 
-                      alt={hotel.name} 
+                      src={restaurant.imageUrl} 
+                      alt={restaurant.name} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
-                      <Hotel className="h-12 w-12 text-gray-400" />
+                      <Utensils className="h-12 w-12 text-gray-400" />
                     </div>
                   )}
                 </div>
                 <CardContent className="p-5 flex-1 flex flex-col">
-                  <h3 className="font-bold text-lg text-gray-800">{hotel.name}</h3>
+                  <h3 className="font-bold text-lg text-gray-800">{restaurant.name}</h3>
                   <div className="flex items-center text-gray-500 text-sm space-x-2 mt-1 mb-3">
-                    <span className="px-2 py-0.5 bg-gray-100 rounded-full capitalize">
-                      {hotel.type === 'hotel' ? 'Hotel' : 'Resort'}
+                    <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                      Restaurant
                     </span>
                     <span>•</span>
                     <div className="flex items-center">
                       <MapPin className="h-3 w-3 mr-1" />
-                      <span>{hotel.location}</span>
+                      <span>{restaurant.location}</span>
                     </div>
                   </div>
-                  {hotel.priceRange?.min && hotel.priceRange?.max && (
+                  {restaurant.priceRange?.min && restaurant.priceRange?.max && (
                     <div className="text-sm text-gray-600 mb-3">
                       <span className="font-medium">Price range: </span>
-                      {hotel.priceRange.currency || 'LKR'} {hotel.priceRange.min} - {hotel.priceRange.max}
+                      {restaurant.priceRange.currency || 'LKR'} {restaurant.priceRange.min} - {restaurant.priceRange.max}
                     </div>
                   )}
                   <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-1">
-                    {hotel.description || 'No description provided.'}
+                    {restaurant.description || 'No description provided.'}
                   </p>
                   <div className="mt-auto">
                     <Button 
                       className="w-full" 
-                      onClick={() => handleViewDetails(hotel._id)}
+                      onClick={() => handleViewDetails(restaurant._id)}
                     >
                       View Details
                     </Button>
@@ -198,5 +198,4 @@ const HotelListPage: React.FC = () => {
   );
 };
 
-export default HotelListPage;
-
+export default RestaurantListPage; 

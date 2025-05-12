@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, User, Mail, Lock, UserPlus, Stethoscope, ShieldCheck, Building, Phone, Calendar } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Lock, UserPlus, Stethoscope, ShieldCheck, Building, Phone, Calendar, Home } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api, { checkApiConnection, checkDatabaseConnection, ApiResponse, AuthResponse } from '@/utils/api-fetch';
@@ -29,6 +29,11 @@ const SignUpPage: React.FC = () => {
   // Organizer-specific fields
   const [companyName, setCompanyName] = useState('');
   const [businessType, setBusinessType] = useState('');
+  
+  // Venue Host specific fields
+  const [venueName, setVenueName] = useState('');
+  const [venueType, setVenueType] = useState('');
+  const [venueLocation, setVenueLocation] = useState('');
 
   // Track API and DB connectivity
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);
@@ -69,6 +74,11 @@ const SignUpPage: React.FC = () => {
       return;
     }
     
+    if (userType === 'venue-host' && (!venueName || !venueType)) {
+      toast.error('Venue Hosts must provide venue name and type');
+      return;
+    }
+    
     if (!agreeTos) {
       toast.error('Please agree to the Terms of Service');
       return;
@@ -106,6 +116,11 @@ const SignUpPage: React.FC = () => {
         // Add organizer-specific fields
         userData.companyName = companyName;
         userData.businessType = businessType || undefined;
+      } else if (userType === 'venue-host') {
+        // Add venue-host specific fields
+        userData.venueName = venueName;
+        userData.venueType = venueType;
+        userData.venueLocation = venueLocation || undefined;
       }
       
       console.log('Sending registration data:', JSON.stringify(userData));
@@ -128,6 +143,8 @@ const SignUpPage: React.FC = () => {
           navigate('/doctor-portal');
         } else if (userType === 'organizer') {
           navigate('/organizer-portal');
+        } else if (userType === 'venue-host') {
+          navigate('/venue-host-portal');
         } else {
           navigate('/');
         }
@@ -167,6 +184,7 @@ const SignUpPage: React.FC = () => {
               {userType === 'user' && "Sign up to start booking events and experiences"}
               {userType === 'organizer' && "Sign up to start creating and managing events"}
               {userType === 'doctor' && "Sign up to join our medical professional network"}
+              {userType === 'venue-host' && "Sign up to list your restaurant or hotel venue"}
             </CardDescription>
           </CardHeader>
           
@@ -186,7 +204,7 @@ const SignUpPage: React.FC = () => {
                   value={userType} 
                   onValueChange={setUserType}
                 >
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="user" className="flex items-center justify-center">
                       <User className="h-4 w-4 mr-2" />
                       User
@@ -198,6 +216,10 @@ const SignUpPage: React.FC = () => {
                     <TabsTrigger value="doctor" className="flex items-center justify-center">
                       <Stethoscope className="h-4 w-4 mr-2" />
                       Doctor
+                    </TabsTrigger>
+                    <TabsTrigger value="venue-host" className="flex items-center justify-center">
+                      <Home className="h-4 w-4 mr-2" />
+                      Venue Host
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -252,6 +274,58 @@ const SignUpPage: React.FC = () => {
                         className="pl-10"
                         value={businessType}
                         onChange={(e) => setBusinessType(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {/* Venue Host-specific fields */}
+              {userType === 'venue-host' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="venueName">Venue Name</Label>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input 
+                        id="venueName" 
+                        type="text" 
+                        placeholder="Your restaurant or hotel name" 
+                        className="pl-10"
+                        value={venueName}
+                        onChange={(e) => setVenueName(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="venueType">Venue Type</Label>
+                    <div className="relative">
+                      <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input 
+                        id="venueType" 
+                        type="text" 
+                        placeholder="e.g., Restaurant, Hotel, Resort, etc." 
+                        className="pl-10"
+                        value={venueType}
+                        onChange={(e) => setVenueType(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="venueLocation">Venue Location</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input 
+                        id="venueLocation" 
+                        type="text" 
+                        placeholder="e.g., Colombo, Kandy, etc." 
+                        className="pl-10"
+                        value={venueLocation}
+                        onChange={(e) => setVenueLocation(e.target.value)}
                       />
                     </div>
                   </div>
@@ -314,8 +388,8 @@ const SignUpPage: React.FC = () => {
                 </div>
               </div>
               
-              {/* Phone number - show for user and organizer */}
-              {(userType === 'user' || userType === 'organizer') && (
+              {/* Phone number - show for user, organizer and venue-host */}
+              {(userType === 'user' || userType === 'organizer' || userType === 'venue-host') && (
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <div className="relative">
@@ -378,7 +452,9 @@ const SignUpPage: React.FC = () => {
                 className={`w-full text-white font-medium ${
                   userType === 'doctor' 
                     ? 'bg-[#4CAF50] hover:bg-[#3d8b40]' 
-                    : 'bg-purple-600 hover:bg-purple-700'
+                    : userType === 'venue-host'
+                      ? 'bg-[#FF9800] hover:bg-[#F57C00]'
+                      : 'bg-purple-600 hover:bg-purple-700'
                 }`}
                 disabled={isLoading}
               >
@@ -387,7 +463,9 @@ const SignUpPage: React.FC = () => {
                     ? "Create Doctor Account" 
                     : userType === 'organizer' 
                       ? "Create Organizer Account" 
-                      : "Create Account"}
+                      : userType === 'venue-host'
+                        ? "Create Venue Host Account"
+                        : "Create Account"}
               </Button>
             </form>
           </CardContent>

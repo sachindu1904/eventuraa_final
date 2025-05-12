@@ -6,6 +6,8 @@ const authRoutes = require('./routes/authRoutes');
 const organizerRoutes = require('./routes/organizerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const eventsRoutes = require('./routes/eventsRoutes');
+const venueHostRoutes = require('./routes/venueHostRoutes');
+const venueRoutes = require('./routes/venueRoutes');
 const Event = require('./models/Event');
 
 // Initialize express app
@@ -40,6 +42,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/organizer', organizerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventsRoutes);
+app.use('/api/venue-host', venueHostRoutes);
+app.use('/api/venues', venueRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

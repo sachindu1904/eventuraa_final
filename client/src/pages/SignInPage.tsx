@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Mail, Lock, CreditCard, Shield, Info, User, UserPlus, Stethoscope, ShieldCheck, Ticket, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, CreditCard, Shield, Info, User, UserPlus, Stethoscope, ShieldCheck, Ticket, Calendar, Home } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -115,6 +115,8 @@ const SignInPage: React.FC = () => {
           navigate('/doctor-portal');
         } else if (userType === 'organizer') {
           navigate('/organizer-portal');
+        } else if (userType === 'venue-host') {
+          navigate('/venue-host-portal');
         } else {
           navigate('/');
         }
@@ -190,7 +192,7 @@ const SignInPage: React.FC = () => {
                   value={userType} 
                   onValueChange={setUserType}
                 >
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="user" className="flex items-center justify-center">
                       <User className="h-4 w-4 mr-2" />
                       User
@@ -202,6 +204,10 @@ const SignInPage: React.FC = () => {
                     <TabsTrigger value="doctor" className="flex items-center justify-center">
                       <Stethoscope className="h-4 w-4 mr-2" />
                       Doctor
+                    </TabsTrigger>
+                    <TabsTrigger value="venue-host" className="flex items-center justify-center">
+                      <Home className="h-4 w-4 mr-2" />
+                      Venue Host
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -229,14 +235,14 @@ const SignInPage: React.FC = () => {
               {/* Email/Phone Field */}
               <div className="space-y-2">
                 <Label htmlFor="emailOrPhone">
-                  {userType === 'organizer' ? 'Email' : 'Email or Phone'}
+                  {userType === 'organizer' || userType === 'venue-host' ? 'Email' : 'Email or Phone'}
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
                   <Input 
                     id="emailOrPhone" 
-                    type={userType === 'organizer' ? 'email' : 'text'}
-                    placeholder={userType === 'organizer' 
+                    type={userType === 'organizer' || userType === 'venue-host' ? 'email' : 'text'}
+                    placeholder={userType === 'organizer' || userType === 'venue-host' 
                       ? "your.email@example.com" 
                       : "e.g., john@email.com or +94 76 123 4567"}
                     className={`pl-10 ${emailError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
@@ -308,7 +314,9 @@ const SignInPage: React.FC = () => {
                 className={`w-full text-white font-medium ${
                   userType === 'doctor' 
                     ? 'bg-[#4CAF50] hover:bg-[#3d8b40]' 
-                    : 'bg-[#7E69AB] hover:bg-[#6E59A5]'
+                    : userType === 'venue-host'
+                      ? 'bg-[#FF9800] hover:bg-[#F57C00]'
+                      : 'bg-[#7E69AB] hover:bg-[#6E59A5]'
                 }`}
                 disabled={isLoading}
               >
@@ -324,7 +332,9 @@ const SignInPage: React.FC = () => {
                   ? "Login to Doctor Portal" 
                   : userType === 'organizer' 
                     ? "Login as Organizer" 
-                    : "Login"}
+                    : userType === 'venue-host'
+                      ? "Login as Venue Host"
+                      : "Login"}
               </Button>
             </form>
           </CardContent>

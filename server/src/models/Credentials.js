@@ -20,7 +20,7 @@ const CredentialsSchema = new mongoose.Schema({
   userType: {
     type: String,
     required: true,
-    enum: ['user', 'organizer', 'doctor', 'admin'],
+    enum: ['user', 'organizer', 'doctor', 'admin', 'venue-host'],
     default: 'user'
   },
   userId: {
@@ -31,7 +31,7 @@ const CredentialsSchema = new mongoose.Schema({
   userModel: {
     type: String,
     required: true,
-    enum: ['User', 'Organizer', 'Doctor', 'Admin']
+    enum: ['User', 'Organizer', 'Doctor', 'Admin', 'VenueHost']
   },
   isVerified: {
     type: Boolean,

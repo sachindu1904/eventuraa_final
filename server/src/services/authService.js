@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Doctor = require('../models/Doctor');
 const Organizer = require('../models/Organizer');
+const VenueHost = require('../models/VenueHost');
 const Credentials = require('../models/Credentials');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -11,7 +12,7 @@ const JWT_EXPIRE = process.env.JWT_EXPIRE || '24h';
 /**
  * Register a new user
  * @param {Object} userData User data
- * @param {string} userType Type of user: 'user', 'doctor', or 'organizer'
+ * @param {string} userType Type of user: 'user', 'doctor', 'organizer', or 'venue-host'
  * @returns {Object} Created user and credentials
  */
 exports.register = async (userData, userType) => {
@@ -85,6 +86,30 @@ exports.register = async (userData, userType) => {
         console.log(`[AUTH SERVICE] Organizer document created: ${user._id}`);
         break;
         
+      case 'venue-host':
+        console.log('[AUTH SERVICE] Creating VenueHost document...');
+        userModel = VenueHost;
+        
+        // Validate required venue host fields
+        if (!userData.venueName || !userData.venueType) {
+          throw new Error('Venue Host registration requires venueName and venueType');
+        }
+        
+        user = await VenueHost.create({
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone || '',
+          venueName: userData.venueName,
+          venueType: userData.venueType,
+          venueLocation: userData.venueLocation || '',
+          // Additional venue host fields if provided
+          ...(userData.description && { description: userData.description }),
+          ...(userData.website && { website: userData.website }),
+          ...(userData.businessAddress && { businessAddress: userData.businessAddress })
+        });
+        console.log(`[AUTH SERVICE] VenueHost document created: ${user._id}`);
+        break;
+        
       default:
         throw new Error('Invalid user type');
     }
@@ -106,7 +131,13 @@ exports.register = async (userData, userType) => {
       phone: userData.phone,
       userType,
       userId: user._id,
-      userModel: userType === 'user' ? 'User' : userType === 'doctor' ? 'Doctor' : 'Organizer',
+      userModel: userType === 'user' 
+        ? 'User' 
+        : userType === 'doctor' 
+          ? 'Doctor' 
+          : userType === 'organizer'
+            ? 'Organizer'
+            : 'VenueHost',
       verificationToken: crypto.randomBytes(20).toString('hex')
     });
     console.log(`[AUTH SERVICE] Credentials document created: ${credentials._id}`);
@@ -251,8 +282,11 @@ exports.login = async (emailOrPhone, password, userType, regNumber = null) => {
       case 'organizer':
         userModel = Organizer;
         break;
+      case 'venue-host':
+        userModel = VenueHost;
+        break;
       default:
-        throw new Error('Invalid user type');
+        throw new Error('Invalid user type in credentials');
     }
     
     user = await userModel.findById(credentials.userId);
