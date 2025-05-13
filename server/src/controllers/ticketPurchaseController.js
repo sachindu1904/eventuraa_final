@@ -104,8 +104,16 @@ exports.purchaseTickets = async (req, res) => {
       }
     }
 
-    // Update total tickets sold for the event
-    event.ticketsSold += ticketItems.length;
+    // Update total tickets sold for the event - this should match the sum of all ticket types sold
+    // Calculate the total tickets sold from the ticket types
+    const totalTicketsSold = event.ticketTypes.reduce(
+      (sum, ticket) => sum + (ticket.quantity - ticket.available),
+      0
+    );
+    
+    // Update the ticketsSold field to ensure consistency
+    event.ticketsSold = totalTicketsSold;
+    
     await event.save();
 
     // 2. Create the ticket purchase record

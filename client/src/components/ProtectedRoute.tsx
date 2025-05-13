@@ -1,21 +1,38 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import useAuth from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
-  userTypes?: ('user' | 'doctor' | 'organizer')[];
+  userTypes?: ('user' | 'doctor' | 'organizer' | 'admin')[];
   children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  userTypes = ['user', 'doctor', 'organizer'], 
+  userTypes = ['user', 'doctor', 'organizer', 'admin'], 
   children 
 }) => {
-  const { isAuthenticated, isLoading, userType } = useAuth();
+  const { isAuthenticated, isLoading, userType, checkAuth } = useAuth();
   const location = useLocation();
+  const [isCheckingLocalAuth, setIsCheckingLocalAuth] = useState(true);
 
-  if (isLoading) {
+  useEffect(() => {
+    // This is a special case handling for post-purchase redirects
+    // to ensure auth persistence is maintained
+    const postPurchaseRedirect = localStorage.getItem('postPurchaseRedirect');
+    
+    if (postPurchaseRedirect && location.pathname === postPurchaseRedirect) {
+      // We are on a post-purchase redirect path, make sure auth is checked again
+      localStorage.removeItem('postPurchaseRedirect');
+      checkAuth().then(() => {
+        setIsCheckingLocalAuth(false);
+      });
+    } else {
+      setIsCheckingLocalAuth(false);
+    }
+  }, [location.pathname, checkAuth]);
+
+  if (isLoading || isCheckingLocalAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

@@ -219,6 +219,11 @@ const TicketCheckoutPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Preserve auth token before request to ensure it's available after redirect
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const userType = localStorage.getItem('userType') || sessionStorage.getItem('userType');
+      const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
+      
       // Call the ticket purchase API endpoint
       const response = await api.post<BookingResponse>('/tickets/purchase', {
         eventId,
@@ -232,25 +237,32 @@ const TicketCheckoutPage: React.FC = () => {
       if (response.success && response.data) {
         toast.success('Tickets purchased successfully!');
         
+        // Store auth info in localStorage to ensure persistence across redirects
+        if (token) localStorage.setItem('token', token);
+        if (userType) localStorage.setItem('userType', userType);
+        if (userData) localStorage.setItem('user', userData);
+        
+        // Store redirect target in localStorage to handle auth persistence across page reload
+        const redirectPath = response.data.bookingId 
+          ? `/bookings/${response.data.bookingId}` 
+          : '/my-bookings';
+        
+        localStorage.setItem('postPurchaseRedirect', redirectPath);
+        
         // For PayPal, we would normally redirect to PayPal here
         if (paymentMethod === 'paypal') {
           // This is just a simulation - in a real app you'd redirect to PayPal
           toast.info('Redirecting to PayPal...');
           // Simulating PayPal redirect delay
           setTimeout(() => {
-            if (response.data.bookingId) {
-              navigate(`/bookings/${response.data.bookingId}`);
-            } else {
-              navigate('/my-bookings');
-            }
+            // Don't use navigate directly which can lose auth state
+            window.location.href = redirectPath;
           }, 1500);
         } else {
           // For credit card, navigate directly to confirmation
-          if (response.data.bookingId) {
-            navigate(`/bookings/${response.data.bookingId}`);
-          } else {
-            navigate('/my-bookings');
-          }
+          // Using window.location.href instead of navigate
+          // This ensures a fresh page load while maintaining auth cookies/storage
+          window.location.href = redirectPath;
         }
       } else {
         toast.error(response.message || 'Failed to complete purchase');
@@ -264,7 +276,12 @@ const TicketCheckoutPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    // If we came from an event page, go back to that event specifically
+    if (eventId) {
+      navigate(`/events/${eventId}`);
+    } else {
+      navigate(-1);
+    }
   };
 
   if (loading) {

@@ -9,10 +9,10 @@ router.post('/purchase', protect, ticketPurchaseController.purchaseTickets);
 // Get user's ticket purchases
 router.get('/my-purchases', protect, ticketPurchaseController.getUserTicketPurchases);
 
-// Get specific ticket purchase
-router.get('/:purchaseId', protect, ticketPurchaseController.getTicketPurchase);
-
 // Get tickets for an event (organizer/admin only)
 router.get('/event/:eventId', protect, ticketPurchaseController.getEventTickets);
+
+// Get specific ticket purchase - this must come after more specific routes
+router.get('/:purchaseId', protect, ticketPurchaseController.getTicketPurchase);
 
 module.exports = router; 

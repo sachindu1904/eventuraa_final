@@ -58,8 +58,22 @@ router.get('/dashboard-stats', authenticate, authorizeUserType(['organizer']), a
     let totalAttendees = 0;
     let totalRevenue = 0;
     events.forEach(event => {
-      totalAttendees += event.ticketsSold || 0;
-      totalRevenue += (event.ticketsSold || 0) * (event.ticketPrice || 0);
+      // If event has ticket types, calculate from there (more accurate)
+      if (event.ticketTypes && event.ticketTypes.length > 0) {
+        const eventTicketsSold = event.ticketTypes.reduce((sum, ticket) => 
+          sum + (ticket.quantity - ticket.available), 0);
+        
+        totalAttendees += eventTicketsSold;
+        
+        // Calculate revenue for each ticket type and add to total
+        event.ticketTypes.forEach(ticket => {
+          totalRevenue += (ticket.quantity - ticket.available) * ticket.price;
+        });
+      } else {
+        // Fallback to the old method if ticket types aren't available
+        totalAttendees += event.ticketsSold || 0;
+        totalRevenue += (event.ticketsSold || 0) * (event.ticketPrice || 0);
+      }
     });
 
     // Get upcoming events
@@ -70,7 +84,26 @@ router.get('/dashboard-stats', authenticate, authorizeUserType(['organizer']), a
     })
     .sort({ date: 1 })
     .limit(5)
-    .select('_id title date ticketsSold location');
+    .select('_id title date ticketTypes ticketsSold location');
+
+    // For upcoming events, calculate ticketsSold from ticketTypes
+    const upcomingEventsWithCorrectTicketsSold = upcomingEvents.map(event => {
+      let eventTicketsSold = event.ticketsSold || 0;
+      
+      // If event has ticket types, recalculate ticketsSold for accuracy
+      if (event.ticketTypes && event.ticketTypes.length > 0) {
+        eventTicketsSold = event.ticketTypes.reduce((sum, ticket) => 
+          sum + (ticket.quantity - ticket.available), 0);
+      }
+      
+      return {
+        _id: event._id,
+        title: event.title,
+        date: event.date,
+        ticketsSold: eventTicketsSold,
+        location: event.location
+      };
+    });
 
     // For recent activity, you would typically need a separate Activity model
     // but for now we'll just mock up some data based on events
@@ -91,7 +124,7 @@ router.get('/dashboard-stats', authenticate, authorizeUserType(['organizer']), a
         activeEvents,
         totalAttendees,
         totalRevenue,
-        upcomingEvents,
+        upcomingEvents: upcomingEventsWithCorrectTicketsSold,
         recentActivity
       }
     });
@@ -386,6 +419,65 @@ router.post('/profile-picture', authenticate, authorizeUserType(['organizer']), 
       });
     }
   });
+});
+
+/**
+ * @route PUT /api/organizer/profile
+ * @desc Update organizer profile information
+ * @access Private (Organizer only)
+ */
+router.put('/profile', authenticate, authorizeUserType(['organizer']), async (req, res) => {
+  try {
+    const organizerId = req.user._id;
+    
+    // Extract fields from request body
+    const {
+      name,
+      companyName,
+      phone,
+      description,
+      website,
+      businessType,
+      socialMedia
+    } = req.body;
+    
+    // Find and update the organizer
+    const updatedOrganizer = await Organizer.findByIdAndUpdate(
+      organizerId,
+      {
+        name,
+        companyName,
+        phone,
+        description,
+        website,
+        businessType,
+        socialMedia
+      },
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedOrganizer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organizer not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        organizer: updatedOrganizer
+      }
+    });
+  } catch (error) {
+    console.error('Update organizer profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: error.message
+    });
+  }
 });
 
 module.exports = router; 

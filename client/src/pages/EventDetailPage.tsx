@@ -51,13 +51,15 @@ const EventDetailPage: React.FC = () => {
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated, userType } = useAuth();
+  const { isAuthenticated, userType, userData } = useAuth();
 
   // Determine if user is an organizer or admin
   const isOrganizer = userType === 'organizer';
-  // Since 'admin' is not in the userType union type, we need to handle it differently
-  const isAdmin = false; // Currently there's no admin type in the userType union
+  const isAdmin = userType === 'admin';
   const isOrganizerOrAdmin = isOrganizer || isAdmin;
+  
+  // Check if user is event owner
+  const [isEventOwner, setIsEventOwner] = useState(false);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -67,6 +69,11 @@ const EventDetailPage: React.FC = () => {
         
         if (response.success && response.data) {
           setEvent(response.data.event);
+          
+          // Check if logged-in organizer is the event owner
+          if (isOrganizer && userData && response.data.event.organizer) {
+            setIsEventOwner(userData.id === response.data.event.organizer._id);
+          }
         } else {
           setError(response.message || 'Failed to load event details');
           toast.error('Failed to load event details');
@@ -83,7 +90,7 @@ const EventDetailPage: React.FC = () => {
     if (eventId) {
       fetchEventDetails();
     }
-  }, [eventId]);
+  }, [eventId, isOrganizer, userData]);
 
   const handleBack = () => {
     navigate(-1);
@@ -98,17 +105,19 @@ const EventDetailPage: React.FC = () => {
       return (
         <Button 
           className="w-full mt-4 bg-[#7E69AB] hover:bg-[#6E59A5]"
-          onClick={() => navigate('/login?redirect=' + encodeURIComponent(`/events/${eventId}/checkout`))}
+          onClick={() => navigate('/signin?redirect=' + encodeURIComponent(`/events/${eventId}/checkout`))}
         >
           Buy Tickets
         </Button>
       );
     }
 
-    if (isOrganizerOrAdmin) {
+    // For organizers who own the event or admins
+    if ((isOrganizer && isEventOwner) || isAdmin) {
       return (
         <div className="space-y-2 mt-4">
-          {isOrganizer && (
+          {/* Only show Edit Event to the event owner (organizer) */}
+          {isOrganizer && isEventOwner && (
             <Button 
               className="w-full bg-[#7E69AB] hover:bg-[#6E59A5] flex items-center justify-center" 
               asChild
@@ -119,6 +128,8 @@ const EventDetailPage: React.FC = () => {
               </Link>
             </Button>
           )}
+          
+          {/* Show analytics to both organizer (owner) and admin */}
           <Button 
             className="w-full bg-[#5A7D9A] hover:bg-[#4A6D8A] flex items-center justify-center"
             asChild
@@ -132,7 +143,7 @@ const EventDetailPage: React.FC = () => {
       );
     }
 
-    // Regular user
+    // Regular user or non-owner organizer
     return (
       <Button 
         className="w-full mt-4 bg-[#7E69AB] hover:bg-[#6E59A5]"

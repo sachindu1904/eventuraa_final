@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { 
+  Calendar, 
+  Check, 
+  X, 
+  MapPin,
+  AlertTriangle,
+  Loader2,
+  Eye
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/sonner';
 import api from '@/utils/api-fetch';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Check, X, AlertTriangle, Calendar, MapPin } from 'lucide-react';
-import { format } from 'date-fns';
+import { Textarea } from '@/components/ui/textarea';
+import EventPreview from './EventPreview';
 
 interface Event {
   _id: string;
@@ -196,18 +196,52 @@ const PendingEventsApproval: React.FC = () => {
                 </div>
               </CardContent>
               <CardFooter className="pt-2 flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={() => openRejectDialog(event)}
-                  disabled={!!processingEventId}
-                >
-                  {processingEventId === event._id ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <X className="h-4 w-4 mr-2 text-red-500" />
-                  )}
-                  Reject
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => openRejectDialog(event)}
+                    disabled={!!processingEventId}
+                  >
+                    {processingEventId === event._id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4 mr-2 text-red-500" />
+                    )}
+                    Reject
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                  >
+                    <EventPreview 
+                      event={{
+                        ...event,
+                        images: event.images || [],
+                        coverImage: event.coverImage || '',
+                        ticketsAvailable: event.ticketsAvailable || 0,
+                        ticketPrice: event.ticketPrice || 0,
+                        eventType: event.eventType || 'General',
+                        location: {
+                          name: event.location?.name || 'TBD',
+                          address: event.location?.address || '',
+                          city: event.location?.city || '',
+                          district: event.location?.district || ''
+                        },
+                        organizer: {
+                          _id: event.organizer?._id || '',
+                          companyName: event.organizer?.companyName || 'Unknown Organizer'
+                        },
+                        approvalStatus: 'pending'
+                      }}
+                      onApprove={handleApproveEvent}
+                      onReject={(eventId, reason) => {
+                        setSelectedEvent(event);
+                        setRejectionReason(reason);
+                        handleRejectEvent();
+                      }}
+                    />
+                  </Button>
+                </div>
                 <Button 
                   onClick={() => handleApproveEvent(event._id)}
                   disabled={!!processingEventId}
