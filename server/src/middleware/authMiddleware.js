@@ -97,6 +97,9 @@ exports.authenticate = async (req, res, next) => {
   }
 };
 
+// Alias for authenticate middleware to maintain API consistency
+exports.protect = exports.authenticate;
+
 /**
  * Middleware to check if user has specific user type
  * @param {Array} allowedTypes - Array of allowed user types

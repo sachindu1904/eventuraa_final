@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import EventPage from "./pages/EventPage";
 import EventDetailPage from "./pages/EventDetailPage";
+import TicketCheckoutPage from "./pages/TicketCheckoutPage";
+import TicketConfirmationPage from "./pages/TicketConfirmationPage";
 import NightlifePage from "./pages/NightlifePage";
 import NightlifeDetail from "./pages/NightlifeDetail";
 import HotelListPage from "./pages/HotelListPage";
@@ -41,6 +43,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/events" element={<EventPage />} />
           <Route path="/events/:eventId" element={<EventDetailPage />} />
+          <Route path="/events/:eventId/checkout" element={<TicketCheckoutPage />} />
+          <Route path="/bookings/:purchaseId" element={<TicketConfirmationPage />} />
+          <Route path="/my-bookings" element={<TicketConfirmationPage />} />
           <Route path="/nightlife" element={<NightlifePage />} />
           <Route path="/nightlife/:venueId" element={<NightlifeDetail />} />
           <Route path="/hotels" element={<HotelListPage />} />

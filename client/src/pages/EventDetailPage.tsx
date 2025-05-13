@@ -9,6 +9,7 @@ import { toast } from '@/components/ui/sonner';
 import api from '@/utils/api-fetch';
 import useAuth from '@/hooks/useAuth';
 import ImageSlider from '@/components/ImageSlider';
+import { ApiResponse } from '@/utils/api-fetch';
 
 interface TicketType {
   name: string;
@@ -40,6 +41,10 @@ interface EventData {
   };
 }
 
+interface EventResponse {
+  event: EventData;
+}
+
 const EventDetailPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -50,15 +55,17 @@ const EventDetailPage: React.FC = () => {
 
   // Determine if user is an organizer or admin
   const isOrganizer = userType === 'organizer';
-  const isAdmin = userType === 'admin';
+  // Since 'admin' is not in the userType union type, we need to handle it differently
+  const isAdmin = false; // Currently there's no admin type in the userType union
   const isOrganizerOrAdmin = isOrganizer || isAdmin;
 
   useEffect(() => {
     const fetchEventDetails = async () => {
       setLoading(true);
       try {
-        const response = await api.get(`/events/${eventId}`);
-        if (response.success) {
+        const response = await api.get<EventResponse>(`/events/${eventId}`);
+        
+        if (response.success && response.data) {
           setEvent(response.data.event);
         } else {
           setError(response.message || 'Failed to load event details');
@@ -82,10 +89,17 @@ const EventDetailPage: React.FC = () => {
     navigate(-1);
   };
 
+  const handleBuyTickets = () => {
+    navigate(`/events/${eventId}/checkout`);
+  };
+
   const renderActionButtons = () => {
     if (!isAuthenticated) {
       return (
-        <Button className="w-full mt-4 bg-[#7E69AB] hover:bg-[#6E59A5]">
+        <Button 
+          className="w-full mt-4 bg-[#7E69AB] hover:bg-[#6E59A5]"
+          onClick={() => navigate('/login?redirect=' + encodeURIComponent(`/events/${eventId}/checkout`))}
+        >
           Buy Tickets
         </Button>
       );
@@ -120,7 +134,10 @@ const EventDetailPage: React.FC = () => {
 
     // Regular user
     return (
-      <Button className="w-full mt-4 bg-[#7E69AB] hover:bg-[#6E59A5]">
+      <Button 
+        className="w-full mt-4 bg-[#7E69AB] hover:bg-[#6E59A5]"
+        onClick={handleBuyTickets}
+      >
         Buy Tickets
       </Button>
     );

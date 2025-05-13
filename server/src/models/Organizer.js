@@ -81,6 +81,14 @@ const OrganizerSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Event'
   }],
+  eventTicketSales: {
+    totalSold: { type: Number, default: 0 },
+    totalRevenue: { type: Number, default: 0 },
+    purchases: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TicketPurchase'
+    }]
+  },
   reviews: [{
     rating: Number,
     comment: String,

@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Calendar, MapPin, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface Event {
   id: number;
@@ -31,6 +31,7 @@ interface EventCardProps {
 
 const EventCard = ({ event, onSelect }: EventCardProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [showTickets, setShowTickets] = useState(false);
   const [ticketCounts, setTicketCounts] = useState<Record<string, number>>({});
   
@@ -64,13 +65,8 @@ const EventCard = ({ event, onSelect }: EventCardProps) => {
       return;
     }
     
-    toast({
-      title: "Proceeding to checkout",
-      description: `Total: LKR ${total} (+ 5% service fee)`,
-    });
-    
-    // Here we would typically redirect to a checkout page or open a modal
-    onSelect();
+    // Navigate to checkout page
+    navigate(`/events/${event.id}/checkout`);
   };
   
   return (
@@ -164,7 +160,7 @@ const EventCard = ({ event, onSelect }: EventCardProps) => {
           <div className="w-full flex items-center justify-between">
             <div className="font-semibold text-[#1E90FF]">{event.price}</div>
             <Button 
-              onClick={() => setShowTickets(true)}
+              onClick={() => navigate(`/events/${event.id}/checkout`)}
               className="bg-[#1E90FF] hover:bg-blue-600 text-white"
             >
               Buy Tickets

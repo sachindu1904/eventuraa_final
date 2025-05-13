@@ -78,6 +78,10 @@ const EventSchema = new mongoose.Schema({
       type: Number,
       required: true
     },
+    sold: {
+      type: Number,
+      default: 0
+    },
     description: String,
     benefits: [String]
   }],
@@ -93,6 +97,10 @@ const EventSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  purchases: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TicketPurchase'
+  }],
   images: [{
     type: String
   }],

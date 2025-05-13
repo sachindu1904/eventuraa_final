@@ -52,6 +52,10 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking'
   }],
+  ticketPurchases: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TicketPurchase'
+  }],
   medicalProfile: {
     exists: { type: Boolean, default: false },
     allergies: [String],
