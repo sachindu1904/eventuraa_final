@@ -27,10 +27,11 @@ import {
   Check,
   X,
   Upload,
-  Star
+  Star,
+  Bed
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
-import api from '@/utils/api-fetch';
+import api, { ApiResponse } from '@/utils/api-fetch';
 import {
   Carousel,
   CarouselContent,
@@ -71,6 +72,52 @@ interface VenueImage {
   isMain: boolean;
 }
 
+interface RoomType {
+  _id: string;
+  name: string;
+  description: string;
+  capacity: number;
+  pricePerNight: {
+    currency: string;
+    amount: number;
+  };
+  amenities: string[];
+  images: VenueImage[];
+  availableRooms: number;
+  totalRooms: number;
+}
+
+interface Venue {
+  _id: string;
+  name: string;
+  type: string;
+  location: string;
+  description?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    district?: string;
+    postalCode?: string;
+    country?: string;
+  };
+  facilities?: string[];
+  amenities?: string[];
+  capacity?: {
+    min?: number;
+    max?: number;
+  };
+  priceRange?: {
+    currency?: string;
+    min?: number;
+    max?: number;
+  };
+  images?: VenueImage[];
+  imageUrl?: string; // Legacy support
+  venueHost?: string;
+  approvalStatus?: string;
+  isActive?: boolean;
+}
+
 interface EditVenueFormData {
   name: string;
   type: string;
@@ -96,10 +143,16 @@ interface EditVenueFormData {
   };
 }
 
+interface VenueResponse {
+  venue: Venue;
+  roomTypes?: RoomType[];
+}
+
 const VenueDetailPage: React.FC = () => {
   const { venueId } = useParams<{ venueId: string }>();
   const navigate = useNavigate();
-  const [venue, setVenue] = useState<any>(null);
+  const [venue, setVenue] = useState<Venue | null>(null);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isVenueHost, setIsVenueHost] = useState(false);
@@ -163,10 +216,16 @@ const VenueDetailPage: React.FC = () => {
         console.log('URL edit parameter (in fetch):', searchParams.get('edit'));
         console.log('Edit mode from URL (in fetch):', editMode);
         
-        const response = await api.get(`/venues/${venueId}`);
+        const response = await api.get<ApiResponse<VenueResponse>>(`/venues/${venueId}`);
         
-        if (response.success) {
+        if (response.success && response.data) {
           setVenue(response.data.venue);
+          
+          // Set room types if available
+          if (response.data.roomTypes && Array.isArray(response.data.roomTypes)) {
+            setRoomTypes(response.data.roomTypes);
+            console.log('Room types loaded:', response.data.roomTypes.length);
+          }
           
           // Check if current user is the venue host
           const userType = localStorage.getItem('userType') || sessionStorage.getItem('userType');
@@ -204,7 +263,7 @@ const VenueDetailPage: React.FC = () => {
     if (venueId) {
       fetchVenueDetails();
     }
-  }, [venueId, navigate]);
+  }, [venueId, navigate, isEditing]);
 
   // Initialize edit form with venue data
   const initializeEditForm = (venueData: any) => {
@@ -482,6 +541,89 @@ const VenueDetailPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Add after the "Contact & Booking" card, before the closing <> tag
+  const renderRoomTypeSection = () => {
+    // Only render for hotels and resorts
+    if (!venue || (venue.type !== 'hotel' && venue.type !== 'resort') || roomTypes.length === 0) {
+      return null;
+    }
+    
+    return (
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4">Available Room Types</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {roomTypes.map((roomType) => (
+            <Card key={roomType._id} className="overflow-hidden flex flex-col h-full">
+              <div className="relative h-48">
+                {roomType.images && roomType.images.length > 0 ? (
+                  <img 
+                    src={roomType.images[0].url} 
+                    alt={roomType.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <Bed className="h-12 w-12 text-gray-400" />
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                  <h3 className="text-white font-bold text-lg">{roomType.name}</h3>
+                </div>
+              </div>
+              
+              <CardContent className="flex-grow flex flex-col p-4">
+                {roomType.description && (
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">{roomType.description}</p>
+                )}
+                
+                <div className="space-y-3 mt-auto">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Capacity:</span>
+                    <span className="font-medium">{roomType.capacity} {roomType.capacity > 1 ? 'persons' : 'person'}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Price per night:</span>
+                    <span className="font-medium">{roomType.pricePerNight.currency} {roomType.pricePerNight.amount.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Available rooms:</span>
+                    <span className="font-medium">{roomType.availableRooms} of {roomType.totalRooms}</span>
+                  </div>
+                  
+                  {roomType.amenities && roomType.amenities.length > 0 && (
+                    <div className="mt-3">
+                      <h4 className="text-sm font-medium mb-2">Room Amenities:</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {roomType.amenities.slice(0, 5).map((amenity, idx) => (
+                          <span key={idx} className="bg-gray-100 text-xs px-2 py-1 rounded-full">
+                            {amenity}
+                          </span>
+                        ))}
+                        {roomType.amenities.length > 5 && (
+                          <span className="bg-gray-100 text-xs px-2 py-1 rounded-full">
+                            +{roomType.amenities.length - 5} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+              
+              <CardFooter className="border-t bg-gray-50 p-4">
+                <Button className="w-full">
+                  Check Availability
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -1124,6 +1266,9 @@ const VenueDetailPage: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Room Types Section */}
+                {renderRoomTypeSection()}
               </>
             )}
           </div>

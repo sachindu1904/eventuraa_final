@@ -176,8 +176,21 @@ const uploadVenueImages = (req, res, next) => {
   console.log('Starting venue images upload process');
   console.log('Request headers:', req.headers);
   
+  // We need a more flexible approach since FormData structure can be complex
+  // Just include a fixed set of fields that handles all cases
   const uploadFields = upload.fields([
-    { name: 'images', maxCount: 10 }, // Up to 10 venue images
+    { name: 'images', maxCount: 10 }, // Venue images
+    // Allow any room type image field pattern
+    { name: 'roomTypes[0][images]', maxCount: 5 },
+    { name: 'roomTypes[1][images]', maxCount: 5 },
+    { name: 'roomTypes[2][images]', maxCount: 5 },
+    { name: 'roomTypes[3][images]', maxCount: 5 },
+    { name: 'roomTypes[4][images]', maxCount: 5 },
+    { name: 'roomTypes[5][images]', maxCount: 5 },
+    { name: 'roomTypes[6][images]', maxCount: 5 },
+    { name: 'roomTypes[7][images]', maxCount: 5 },
+    { name: 'roomTypes[8][images]', maxCount: 5 },
+    { name: 'roomTypes[9][images]', maxCount: 5 }
   ]);
   
   uploadFields(req, res, (err) => {
@@ -197,7 +210,7 @@ const uploadVenueImages = (req, res, next) => {
       });
     }
     
-    console.log('Venue images uploaded successfully to temp storage');
+    console.log('Venue and room type images uploaded successfully to temp storage');
     console.log('Uploaded files:', req.files);
     next();
   });
@@ -288,6 +301,7 @@ const processVenueImages = async (req, res, next) => {
     console.log('Processing uploaded venue images');
     
     req.processedVenueImages = [];
+    req.processedRoomTypeImages = [];
 
     // Process venue images
     if (req.files && req.files.images && req.files.images.length > 0) {
@@ -334,13 +348,86 @@ const processVenueImages = async (req, res, next) => {
     } else {
       console.log('No venue images to process');
     }
+    
+    // Process room type images
+    if (req.files) {
+      const roomTypeImagePromises = [];
+      
+      // Find all the room type image fields
+      Object.keys(req.files).forEach(fieldName => {
+        if (fieldName.startsWith('roomTypes[') && fieldName.endsWith('][images]')) {
+          // Extract room type index from field name (e.g., 'roomTypes[0][images]' -> 0)
+          const match = fieldName.match(/roomTypes\[(\d+)\]/);
+          if (match && match[1]) {
+            const roomTypeIndex = parseInt(match[1]);
+            
+            console.log(`Processing images for room type ${roomTypeIndex}`);
+            
+            // Process each image for this room type
+            req.files[fieldName].forEach(file => {
+              const promise = (async () => {
+                try {
+                  console.log(`Uploading room type image to Cloudinary: ${file.path}`);
+                  
+                  // Upload the image to cloudinary
+                  const result = await cloudinary.uploader.upload(file.path, {
+                    folder: 'eventuraa-roomtypes',
+                    use_filename: true
+                  });
+                  
+                  console.log(`Room type image uploaded: ${result.secure_url}`);
+                  
+                  // Remove the local file after upload
+                  fs.unlinkSync(file.path);
+                  
+                  return {
+                    roomTypeIndex, // Store which room type this image belongs to
+                    url: result.secure_url,
+                    public_id: result.public_id,
+                    caption: '',
+                    isMain: false // Set main image logic if needed
+                  };
+                } catch (error) {
+                  console.error(`Error uploading to Cloudinary: ${error.message}`);
+                  if (fs.existsSync(file.path)) {
+                    try {
+                      fs.unlinkSync(file.path);
+                    } catch (unlinkError) {
+                      console.error(`Failed to clean up temp file: ${unlinkError.message}`);
+                    }
+                  }
+                  throw error;
+                }
+              })();
+              
+              roomTypeImagePromises.push(promise);
+            });
+          }
+        }
+      });
+      
+      if (roomTypeImagePromises.length > 0) {
+        try {
+          // Wait for all room type image uploads to complete
+          req.processedRoomTypeImages = await Promise.all(roomTypeImagePromises);
+          console.log(`Processed ${req.processedRoomTypeImages.length} room type images`);
+        } catch (error) {
+          console.error('Error processing room type images:', error);
+          // Still continue even if some images fail
+          req.processedRoomTypeImages = [];
+        }
+      } else {
+        console.log('No room type images to process');
+        req.processedRoomTypeImages = [];
+      }
+    }
 
     next();
   } catch (err) {
-    console.error('Error processing venue images:', err);
+    console.error('Error processing images:', err);
     return res.status(500).json({
       success: false,
-      message: 'Failed to process venue images',
+      message: 'Failed to process images',
       error: err.message
     });
   }

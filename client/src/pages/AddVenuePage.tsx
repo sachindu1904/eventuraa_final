@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
-import { ArrowLeft, Building, MapPin, Info, Image, X, Upload } from 'lucide-react';
+import { ArrowLeft, Building, MapPin, Info, Image, X, Upload, Plus, Trash2, Bed } from 'lucide-react';
 import api from '@/utils/api-fetch';
 
 const AddVenuePage: React.FC = () => {
@@ -45,6 +45,18 @@ const AddVenuePage: React.FC = () => {
     }
   });
 
+  // New state for room types
+  const [roomTypes, setRoomTypes] = useState<Array<{
+    name: string;
+    description: string;
+    capacity: string;
+    pricePerNight: string;
+    amenities: string;
+    totalRooms: string;
+    images: File[];
+    imagePreviewUrls: string[];
+  }>>([]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
@@ -70,6 +82,86 @@ const AddVenuePage: React.FC = () => {
       ...formData,
       [name]: value
     });
+  };
+
+  // Handler for room type inputs
+  const handleRoomTypeChange = (index: number, field: string, value: string) => {
+    const updatedRoomTypes = [...roomTypes];
+    updatedRoomTypes[index] = {
+      ...updatedRoomTypes[index],
+      [field]: value
+    };
+    setRoomTypes(updatedRoomTypes);
+  };
+
+  // Add a new room type
+  const addRoomType = () => {
+    setRoomTypes([
+      ...roomTypes,
+      {
+        name: '',
+        description: '',
+        capacity: '',
+        pricePerNight: '',
+        amenities: '',
+        totalRooms: '',
+        images: [],
+        imagePreviewUrls: []
+      }
+    ]);
+  };
+
+  // Remove a room type
+  const removeRoomType = (index: number) => {
+    const updatedRoomTypes = [...roomTypes];
+    
+    // Clean up image previews to prevent memory leaks
+    updatedRoomTypes[index].imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+    
+    updatedRoomTypes.splice(index, 1);
+    setRoomTypes(updatedRoomTypes);
+  };
+
+  // Handler for room type image upload
+  const handleRoomTypeImageChange = (e: React.ChangeEvent<HTMLInputElement>, roomTypeIndex: number) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      
+      // Check if adding new files would exceed the limit (5 per room type)
+      if (roomTypes[roomTypeIndex].images.length + files.length > 5) {
+        toast.error('You can upload a maximum of 5 images per room type');
+        return;
+      }
+      
+      const updatedRoomTypes = [...roomTypes];
+      updatedRoomTypes[roomTypeIndex].images = [
+        ...updatedRoomTypes[roomTypeIndex].images,
+        ...files
+      ];
+      
+      // Create preview URLs for the selected images
+      const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+      updatedRoomTypes[roomTypeIndex].imagePreviewUrls = [
+        ...updatedRoomTypes[roomTypeIndex].imagePreviewUrls,
+        ...newPreviewUrls
+      ];
+      
+      setRoomTypes(updatedRoomTypes);
+    }
+  };
+
+  // Remove a room type image
+  const removeRoomTypeImage = (roomTypeIndex: number, imageIndex: number) => {
+    const updatedRoomTypes = [...roomTypes];
+    
+    // Revoke the object URL to prevent memory leaks
+    URL.revokeObjectURL(updatedRoomTypes[roomTypeIndex].imagePreviewUrls[imageIndex]);
+    
+    // Remove image and its preview
+    updatedRoomTypes[roomTypeIndex].images.splice(imageIndex, 1);
+    updatedRoomTypes[roomTypeIndex].imagePreviewUrls.splice(imageIndex, 1);
+    
+    setRoomTypes(updatedRoomTypes);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +197,18 @@ const AddVenuePage: React.FC = () => {
     if (!formData.name || !formData.type || !formData.location) {
       toast.error('Please fill in all required fields');
       return;
+    }
+    
+    // Validate room types if any are added
+    if (roomTypes.length > 0) {
+      const invalidRoomTypes = roomTypes.filter(rt => 
+        !rt.name || !rt.capacity || !rt.totalRooms || !rt.pricePerNight
+      );
+      
+      if (invalidRoomTypes.length > 0) {
+        toast.error('Please fill in all required fields for room types');
+        return;
+      }
     }
     
     setIsLoading(true);
@@ -163,10 +267,56 @@ const AddVenuePage: React.FC = () => {
       if (formData.priceRange.min) formDataObj.append('priceRange[min]', formData.priceRange.min);
       if (formData.priceRange.max) formDataObj.append('priceRange[max]', formData.priceRange.max);
       
-      // Append images
+      // Append venue images
       selectedImages.forEach(image => {
         formDataObj.append('images', image);
       });
+      
+      // Append room types data
+      if (roomTypes.length > 0) {
+        console.log(`Adding ${roomTypes.length} room types to form data`);
+        
+        // Add room types to FormData with clear index structure
+        roomTypes.forEach((roomType, rtIndex) => {
+          // Basic room type data
+          formDataObj.append(`roomTypes[${rtIndex}][name]`, roomType.name);
+          formDataObj.append(`roomTypes[${rtIndex}][description]`, roomType.description || '');
+          formDataObj.append(`roomTypes[${rtIndex}][capacity]`, roomType.capacity);
+          formDataObj.append(`roomTypes[${rtIndex}][pricePerNight]`, roomType.pricePerNight);
+          formDataObj.append(`roomTypes[${rtIndex}][totalRooms]`, roomType.totalRooms);
+          
+          // Add amenities
+          if (roomType.amenities) {
+            formDataObj.append(`roomTypes[${rtIndex}][amenities]`, roomType.amenities);
+          }
+          
+          // Add room type images with explicit naming that matches server expectations
+          if (roomType.images.length > 0) {
+            roomType.images.forEach((image) => {
+              // Using the exact field name pattern that the server expects
+              formDataObj.append(`roomTypes[${rtIndex}][images]`, image);
+            });
+          }
+        });
+        
+        // Also stringify and append the entire roomTypes array as a fallback
+        // This provides an additional way for the server to parse the data
+        const roomTypesJSON = JSON.stringify(roomTypes.map(rt => ({
+          name: rt.name,
+          description: rt.description,
+          capacity: rt.capacity, 
+          pricePerNight: rt.pricePerNight,
+          totalRooms: rt.totalRooms,
+          amenities: rt.amenities
+        })));
+        formDataObj.append('roomTypesJSON', roomTypesJSON);
+      }
+      
+      // Log FormData entries for debugging
+      console.log('FormData entries:');
+      for (const pair of formDataObj.entries()) {
+        console.log(pair[0], pair[1]);
+      }
       
       // Send the data to the API with multipart/form-data
       // Don't manually set Content-Type header, browser will set it automatically with boundary
@@ -175,6 +325,9 @@ const AddVenuePage: React.FC = () => {
       if (response.success) {
         // Cleanup preview URLs
         previewImages.forEach(url => URL.revokeObjectURL(url));
+        roomTypes.forEach(rt => {
+          rt.imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+        });
         
         toast.success('Venue added successfully!');
         navigate('/venue-host-portal');
@@ -432,6 +585,160 @@ const AddVenuePage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Room Types</CardTitle>
+                  <CardDescription>
+                    Add different types of rooms available at your venue
+                  </CardDescription>
+                </div>
+                <Button 
+                  type="button" 
+                  onClick={addRoomType}
+                  className="bg-[#FF9800] hover:bg-[#F57C00] text-white"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Room Type
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {roomTypes.length === 0 ? (
+                  <div className="text-center p-6 border border-dashed rounded-md">
+                    <Bed className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-gray-500">No room types added yet</p>
+                    <p className="text-gray-400 text-sm">Click the button above to add room types like Standard, Deluxe, Suite, etc.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {roomTypes.map((roomType, index) => (
+                      <div key={index} className="border rounded-md p-4 relative">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => removeRoomType(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        
+                        <h3 className="font-medium text-lg mb-4">Room Type #{index + 1}</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Room Type Name <span className="text-red-500">*</span></Label>
+                            <Input
+                              placeholder="e.g., Deluxe, Standard, Suite"
+                              value={roomType.name}
+                              onChange={(e) => handleRoomTypeChange(index, 'name', e.target.value)}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Capacity (Persons) <span className="text-red-500">*</span></Label>
+                            <Input
+                              type="number"
+                              placeholder="e.g., 2"
+                              value={roomType.capacity}
+                              onChange={(e) => handleRoomTypeChange(index, 'capacity', e.target.value)}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Price Per Night (LKR) <span className="text-red-500">*</span></Label>
+                            <Input
+                              type="number"
+                              placeholder="e.g., 15000"
+                              value={roomType.pricePerNight}
+                              onChange={(e) => handleRoomTypeChange(index, 'pricePerNight', e.target.value)}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Total Rooms <span className="text-red-500">*</span></Label>
+                            <Input
+                              type="number"
+                              placeholder="e.g., 10"
+                              value={roomType.totalRooms}
+                              onChange={(e) => handleRoomTypeChange(index, 'totalRooms', e.target.value)}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Room Amenities</Label>
+                            <Input
+                              placeholder="e.g., Air Conditioning, TV, Mini Fridge, Balcony"
+                              value={roomType.amenities}
+                              onChange={(e) => handleRoomTypeChange(index, 'amenities', e.target.value)}
+                            />
+                            <p className="text-xs text-gray-500">Separate multiple amenities with commas</p>
+                          </div>
+                          
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Description</Label>
+                            <Textarea
+                              placeholder="Describe this room type..."
+                              value={roomType.description}
+                              onChange={(e) => handleRoomTypeChange(index, 'description', e.target.value)}
+                              className="min-h-[80px]"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Room Images</Label>
+                            <div className="flex items-center gap-4">
+                              <label className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-4 w-full h-24 cursor-pointer hover:border-gray-400 transition-colors duration-200">
+                                <div className="flex flex-col items-center text-gray-500">
+                                  <Upload className="h-6 w-6 mb-1" />
+                                  <span className="text-sm">Upload room images</span>
+                                  <span className="text-xs">(Max 5 images)</span>
+                                </div>
+                                <Input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  multiple
+                                  onChange={(e) => handleRoomTypeImageChange(e, index)}
+                                />
+                              </label>
+                            </div>
+                            
+                            {roomType.imagePreviewUrls.length > 0 && (
+                              <div className="mt-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                                  {roomType.imagePreviewUrls.map((preview, imgIndex) => (
+                                    <div key={imgIndex} className="relative group">
+                                      <img
+                                        src={preview}
+                                        alt={`Room ${index + 1} Preview ${imgIndex + 1}`}
+                                        className="h-16 w-full object-cover rounded-md"
+                                      />
+                                      <button
+                                        type="button"
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => removeRoomTypeImage(index, imgIndex)}
+                                      >
+                                        <X className="h-2 w-2" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
             
