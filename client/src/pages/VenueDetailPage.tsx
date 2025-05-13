@@ -28,10 +28,11 @@ import {
   X,
   Upload,
   Star,
-  Bed
+  Bed,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
-import api, { ApiResponse } from '@/utils/api-fetch';
+import api, { ApiResponse, VenueResponseData } from '@/utils/api-fetch';
 import {
   Carousel,
   CarouselContent,
@@ -63,6 +64,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { addDays } from "date-fns";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 interface VenueImage {
   _id: string;
@@ -145,7 +160,11 @@ interface EditVenueFormData {
 
 interface VenueResponse {
   venue: Venue;
-  roomTypes?: RoomType[];
+  roomTypes: RoomType[];
+}
+
+interface ApiVenueResponse extends ApiResponse {
+  data: VenueResponse;
 }
 
 const VenueDetailPage: React.FC = () => {
@@ -216,21 +235,24 @@ const VenueDetailPage: React.FC = () => {
         console.log('URL edit parameter (in fetch):', searchParams.get('edit'));
         console.log('Edit mode from URL (in fetch):', editMode);
         
-        const response = await api.get<ApiResponse<VenueResponse>>(`/venues/${venueId}`);
+        const response = await api.get<ApiResponse<VenueResponseData>>(`/venues/${venueId}`);
         
         if (response.success && response.data) {
-          setVenue(response.data.venue);
+          const data = response.data;
+          if (data.venue) {
+            setVenue(data.venue);
+          }
           
           // Set room types if available
-          if (response.data.roomTypes && Array.isArray(response.data.roomTypes)) {
-            setRoomTypes(response.data.roomTypes);
-            console.log('Room types loaded:', response.data.roomTypes.length);
+          if (data.roomTypes && Array.isArray(data.roomTypes)) {
+            setRoomTypes(data.roomTypes);
+            console.log('Room types loaded:', data.roomTypes.length);
           }
           
           // Check if current user is the venue host
           const userType = localStorage.getItem('userType') || sessionStorage.getItem('userType');
           const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
-          const venueHostId = response.data.venue.venueHost?.toString();
+          const venueHostId = data.venue?.venueHost?.toString();
           console.log('User checks:', { userType, userId, venueHostId });
           console.log('Is venue host check:', userType === 'venue-host' && userId === venueHostId);
           
@@ -247,7 +269,9 @@ const VenueDetailPage: React.FC = () => {
           }
           
           // Initialize edit form data from venue
-          initializeEditForm(response.data.venue);
+          if (data.venue) {
+            initializeEditForm(data.venue);
+          }
         } else {
           toast.error('Failed to load venue details');
           navigate('/');
@@ -361,9 +385,9 @@ const VenueDetailPage: React.FC = () => {
       };
       
       // Send the update to the API
-      const response = await api.put(`/venues/${venueId}`, venueData);
+      const response = await api.put<ApiResponse<VenueResponseData>>(`/venues/${venueId}`, venueData);
       
-      if (response.success) {
+      if (response.success && response.data && response.data.venue) {
         toast.success('Venue updated successfully');
         // Update the local venue state
         setVenue(response.data.venue);
@@ -466,9 +490,9 @@ const VenueDetailPage: React.FC = () => {
       });
       
       // Upload the images
-      const response = await api.post(`/venues/${venueId}/images`, formData);
+      const response = await api.post<ApiResponse<VenueResponseData>>(`/venues/${venueId}/images`, formData);
       
-      if (response.success) {
+      if (response.success && response.data && response.data.venue) {
         // Clear selected images
         setSelectedImages([]);
         // Revoke all preview URLs
@@ -496,9 +520,9 @@ const VenueDetailPage: React.FC = () => {
   const handleDeleteImage = async (imageId: string) => {
     try {
       setIsLoading(true);
-      const response = await api.delete(`/venues/${venueId}/images/${imageId}`);
+      const response = await api.delete<ApiResponse<VenueResponseData>>(`/venues/${venueId}/images/${imageId}`);
       
-      if (response.success) {
+      if (response.success && response.data && response.data.venue) {
         // Update venue with the new image list
         setVenue(response.data.venue);
         toast.success('Image deleted successfully');
@@ -525,11 +549,11 @@ const VenueDetailPage: React.FC = () => {
       }));
       
       // Update the venue with the new image array
-      const response = await api.put(`/venues/${venueId}`, {
+      const response = await api.put<ApiResponse<VenueResponseData>>(`/venues/${venueId}`, {
         images: updatedImages
       });
       
-      if (response.success) {
+      if (response.success && response.data && response.data.venue) {
         setVenue(response.data.venue);
         toast.success('Main image updated');
       } else {
@@ -543,7 +567,21 @@ const VenueDetailPage: React.FC = () => {
     }
   };
 
-  // Add after the "Contact & Booking" card, before the closing <> tag
+  // Replace the handleOpenBookingDialog function with a navigation function
+  const handleNavigateToBooking = (roomType: RoomType) => {
+    // Use the correct URL pattern that matches the routing in App.tsx
+    navigate(`/booking/${venueId}/${roomType._id}`);
+    console.log(`Navigating to booking page for venue ${venueId} and room ${roomType._id}`);
+  };
+
+  // Keep the calculateTotalPrice function as it may be useful elsewhere
+  const calculateTotalPrice = (pricePerNight: number, checkIn: Date, checkOut: Date) => {
+    const oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
+    const nights = Math.round(Math.abs((checkOut.getTime() - checkIn.getTime()) / oneDay));
+    return pricePerNight * (nights || 1); // Ensure at least 1 night
+  };
+
+  // Modify the renderRoomTypeSection function to use navigation instead of the booking dialog
   const renderRoomTypeSection = () => {
     // Only render for hotels and resorts
     if (!venue || (venue.type !== 'hotel' && venue.type !== 'resort') || roomTypes.length === 0) {
@@ -615,8 +653,12 @@ const VenueDetailPage: React.FC = () => {
               </CardContent>
               
               <CardFooter className="border-t bg-gray-50 p-4">
-                <Button className="w-full">
-                  Check Availability
+                <Button 
+                  className="w-full"
+                  onClick={() => handleNavigateToBooking(roomType)}
+                  disabled={roomType.availableRooms === 0}
+                >
+                  {roomType.availableRooms > 0 ? 'Book Now' : 'No Availability'}
                 </Button>
               </CardFooter>
             </Card>
@@ -1260,8 +1302,8 @@ const VenueDetailPage: React.FC = () => {
                         </p>
                       </div>
                       <Button>
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Request Booking
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        Check Availability
                       </Button>
                     </div>
                   </CardContent>

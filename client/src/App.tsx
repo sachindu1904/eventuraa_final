@@ -29,6 +29,8 @@ import AddVenuePage from "./pages/AddVenuePage";
 import VenueDetailPage from "./pages/VenueDetailPage";
 import VenueListPage from "./pages/VenueListPage";
 import RestaurantListPage from "./pages/RestaurantListPage";
+import BookingPage from "./pages/BookingPage";
+import BookingConfirmationPage from "./pages/BookingConfirmationPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,10 +66,12 @@ const App = () => (
           <Route path="/venue-host/add-venue" element={<AddVenuePage />} />
           <Route path="/venues" element={<VenueListPage />} />
           <Route path="/venues/:venueId" element={<VenueDetailPage />} />
+          <Route path="/booking/:venueId/:roomTypeId" element={<BookingPage />} />
+          <Route path="/book/:venueId/:roomTypeId" element={<BookingPage />} />
+          <Route path="/booking-confirmation/:bookingId" element={<BookingConfirmationPage />} />
           <Route path="/hidden-gems" element={<HiddenGemsPage />} />
           <Route path="/hidden-gems-owner-login" element={<HiddenGemsOwnerLoginPage />} />
           <Route path="/hidden-gems-owner-portal/*" element={<HiddenGemsOwnerPortal />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

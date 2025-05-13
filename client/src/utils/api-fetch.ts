@@ -4,6 +4,41 @@ import { toast } from '@/components/ui/sonner';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Define API response interfaces
+export interface VenueResponseData {
+  venue: {
+    _id: string;
+    name: string;
+    type: string;
+    location: string;
+    description?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      district?: string;
+      postalCode?: string;
+      country?: string;
+    };
+    facilities?: string[];
+    amenities?: string[];
+    capacity?: {
+      min?: number;
+      max?: number;
+    };
+    priceRange?: {
+      currency?: string;
+      min?: number;
+      max?: number;
+    };
+    images?: any[];
+    imageUrl?: string;
+    venueHost?: string;
+    approvalStatus?: string;
+    isActive?: boolean;
+  };
+  roomTypes?: any[];
+  [key: string]: any;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;

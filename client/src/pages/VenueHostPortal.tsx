@@ -26,6 +26,14 @@ import {
 import { toast } from '@/components/ui/sonner';
 import api from '@/utils/api-fetch';
 import VenueHostSettings from '@/components/venuehost/VenueHostSettings';
+import BookingsList from '@/components/BookingsList';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface VenueImage {
   _id: string;
@@ -322,12 +330,20 @@ const VenueHostPortal: React.FC = () => {
                     <span>Add New Venue</span>
                   </Button>
                   
-                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                    onClick={() => setActiveTab('bookings')}
+                  >
                     <Calendar className="h-6 w-6" />
                     <span>Manage Bookings</span>
                   </Button>
                   
-                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                    onClick={() => setActiveTab('settings')}
+                  >
                     <Settings className="h-6 w-6" />
                     <span>Update Profile</span>
                   </Button>
@@ -460,49 +476,47 @@ const VenueHostPortal: React.FC = () => {
           
           {activeTab === 'bookings' && (
             <div className="space-y-6">
-              <h1 className="text-2xl font-bold text-gray-800">Bookings</h1>
-              <Card>
-                <CardContent className="py-10 flex flex-col items-center justify-center">
-                  <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-700">No Bookings Yet</h3>
-                  <p className="text-gray-500 text-center max-w-md">
-                    You have no bookings yet. They will appear here once customers start booking your venues.
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800">Bookings</h2>
+                <div className="flex gap-2">
+                  <Select defaultValue="all" onValueChange={(value) => console.log('Selected venue:', value)}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="All Venues" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Venues</SelectItem>
+                      {venues.map(venue => (
+                        <SelectItem key={venue._id} value={venue._id}>{venue.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <BookingsList />
+            </div>
+          )}
+          
+          {activeTab === 'customers' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-800">Customers</h2>
+              <p className="text-gray-600 mt-2">Manage your customers and their information.</p>
+              {/* Customer management UI would go here */}
+            </div>
+          )}
+          
+          {activeTab === 'payments' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-800">Payments</h2>
+              <p className="text-gray-600 mt-2">View payment history and manage your payment settings.</p>
+              {/* Payment management UI would go here */}
             </div>
           )}
           
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              <h1 className="text-2xl font-bold text-gray-800">Account Settings</h1>
-              <VenueHostSettings 
-                venueHost={venueHost}
-                onUpdate={(updatedVenueHost) => setVenueHost(updatedVenueHost)}
-              />
-            </div>
-          )}
-          
-          {(activeTab === 'customers' || activeTab === 'payments') && (
-            <div className="space-y-6">
-              <h1 className="text-2xl font-bold text-gray-800">
-                {activeTab === 'customers' ? 'Customers' : 'Payments'}
-              </h1>
-              <Card>
-                <CardContent className="py-10 flex flex-col items-center justify-center">
-                  {activeTab === 'customers' ? (
-                    <Users className="h-12 w-12 text-gray-400 mb-4" />
-                  ) : (
-                    <CreditCard className="h-12 w-12 text-gray-400 mb-4" />
-                  )}
-                  <h3 className="text-lg font-medium text-gray-700">No Data Yet</h3>
-                  <p className="text-gray-500 text-center max-w-md">
-                    {activeTab === 'customers' 
-                      ? 'You have no customers yet. They will appear here once you receive bookings.'
-                      : 'You have no payment records yet. They will appear here once you receive bookings.'}
-                  </p>
-                </CardContent>
-              </Card>
+              <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
+              <VenueHostSettings venueHost={venueHost} />
             </div>
           )}
         </div>
