@@ -12,7 +12,11 @@ import {
   Clock,
   UserPlus,
   Bell,
-  ArrowRight
+  ArrowRight,
+  Building,
+  Home,
+  MapPin,
+  Star
 } from 'lucide-react';
 import { AdminData } from '@/hooks/useAdminData';
 import { useAdminDashboardStats } from '@/hooks/useAdminData';
@@ -138,6 +142,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin }) => {
                 <div className="text-2xl font-bold">{stats?.counts.organizers || 0}</div>
                 <p className="text-xs text-gray-500">
                   {stats?.active.organizers || 0} active
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Venue Hosts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center">
+              <Building className="h-8 w-8 text-pink-500 mr-3" />
+              <div>
+                <div className="text-2xl font-bold">{stats?.counts.venueHosts || 0}</div>
+                <p className="text-xs text-gray-500">
+                  {stats?.active.venueHosts || 0} active
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Venues</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center">
+              <Home className="h-8 w-8 text-indigo-500 mr-3" />
+              <div>
+                <div className="text-2xl font-bold">{stats?.counts.venues || 0}</div>
+                <p className="text-xs text-gray-500">
+                  Total registered venues
                 </p>
               </div>
             </div>
@@ -276,6 +314,43 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin }) => {
                 <Users className="h-10 w-10 mx-auto mb-2 text-gray-400" />
                 <h3 className="text-lg font-medium mb-1">No recent users</h3>
                 <p className="text-sm">New user registrations will appear here</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Trending Venues</CardTitle>
+            <CardDescription>Top-rated venues on the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {stats?.trendingVenues && stats.trendingVenues.length > 0 ? (
+              <div className="space-y-4">
+                {stats.trendingVenues.map((venue) => (
+                  <div key={venue._id} className="flex justify-between items-center border-b pb-2">
+                    <div className="flex items-center">
+                      <Home className="h-4 w-4 text-indigo-500 mr-2" />
+                      <div>
+                        <div className="font-medium">{venue.name}</div>
+                        <div className="text-xs text-gray-500 flex items-center">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {venue.location} • {venue.type}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <Star className="h-3 w-3 text-yellow-500 mr-1" />
+                      <span className="text-sm font-medium">{venue.averageRating?.toFixed(1) || 'N/A'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 text-gray-500">
+                <Building className="h-10 w-10 mx-auto mb-2 text-gray-400" />
+                <h3 className="text-lg font-medium mb-1">No venues available</h3>
+                <p className="text-sm">Trending venues will appear here</p>
               </div>
             )}
           </CardContent>

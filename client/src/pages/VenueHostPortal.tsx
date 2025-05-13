@@ -20,9 +20,20 @@ import {
   Edit,
   Trash,
   Image,
+  AlertTriangle,
+  User,
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import api from '@/utils/api-fetch';
+import VenueHostSettings from '@/components/venuehost/VenueHostSettings';
+
+interface VenueImage {
+  _id: string;
+  url: string;
+  public_id: string;
+  caption?: string;
+  isMain: boolean;
+}
 
 interface Venue {
   _id: string;
@@ -30,7 +41,10 @@ interface Venue {
   type: string;
   location: string;
   description: string;
-  imageUrl?: string;
+  images?: VenueImage[];
+  imageUrl?: string; // Legacy support
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
 }
 
 const VenueHostPortal: React.FC = () => {
@@ -103,7 +117,7 @@ const VenueHostPortal: React.FC = () => {
   };
 
   const handleEditVenue = (venueId: string) => {
-    navigate(`/venue-host/edit-venue/${venueId}`);
+    navigate(`/venues/${venueId}?edit=true`);
   };
 
   const handleDeleteVenue = async (venueId: string) => {
@@ -137,10 +151,27 @@ const VenueHostPortal: React.FC = () => {
       <div className="w-64 bg-white border-r border-gray-200 hidden md:block">
         <div className="flex flex-col h-full">
           <div className="p-4 border-b">
-            <h2 className="text-xl font-bold text-gray-800">Venue Host Portal</h2>
-            <p className="text-sm text-gray-500 mt-1 truncate">
-              {venueHost?.venueName || 'My Venue'}
-            </p>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                {venueHost?.profileImage ? (
+                  <img 
+                    src={venueHost.profileImage} 
+                    alt={venueHost?.name || 'Profile'} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                    <User className="h-6 w-6 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="overflow-hidden">
+                <h2 className="text-xl font-bold text-gray-800 truncate">Venue Host Portal</h2>
+                <p className="text-sm text-gray-500 truncate">
+                  {venueHost?.venueName || 'My Venue'}
+                </p>
+              </div>
+            </div>
           </div>
           
           <nav className="flex-1 p-4 space-y-1">
@@ -160,6 +191,11 @@ const VenueHostPortal: React.FC = () => {
             >
               <Home className="mr-2 h-4 w-4" />
               My Venues
+              {venues.filter(venue => venue.approvalStatus === 'pending').length > 0 && (
+                <span className="ml-auto bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full">
+                  {venues.filter(venue => venue.approvalStatus === 'pending').length}
+                </span>
+              )}
             </Button>
             
             <Button 
@@ -216,7 +252,22 @@ const VenueHostPortal: React.FC = () => {
       <div className="flex-1 overflow-auto">
         {/* Mobile header */}
         <div className="md:hidden bg-white p-4 border-b flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-800">Venue Host Portal</h2>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+              {venueHost?.profileImage ? (
+                <img 
+                  src={venueHost.profileImage} 
+                  alt={venueHost?.name || 'Profile'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <User className="h-4 w-4 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <h2 className="text-xl font-bold text-gray-800">Venue Host Portal</h2>
+          </div>
           <Button variant="outline" size="icon" onClick={() => handleLogout()}>
             <LogOut className="h-5 w-5" />
           </Button>
@@ -292,85 +343,118 @@ const VenueHostPortal: React.FC = () => {
           
           {activeTab === 'venues' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800">My Venues</h1>
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800">My Venues</h2>
                 <Button onClick={handleAddNewVenue}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Add New Venue
                 </Button>
               </div>
-              
-              {venues.length === 0 ? (
-                <Card className="bg-gray-50 border border-dashed">
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Home className="h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-700">No Venues Yet</h3>
-                    <p className="text-gray-500 mb-4 text-center max-w-md">
-                      You haven't added any venues yet. Click the button below to create your first venue listing.
-                    </p>
-                    <Button onClick={handleAddNewVenue}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Venue
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {venues.map((venue) => (
+
+              {venues.filter(venue => venue.approvalStatus === 'pending').length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
+                  <h3 className="text-amber-800 font-medium flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Pending Approval
+                  </h3>
+                  <p className="text-amber-700 mt-1">
+                    You have {venues.filter(venue => venue.approvalStatus === 'pending').length} venue(s) waiting for admin approval. 
+                    Once approved, they will be visible to all users.
+                  </p>
+                </div>
+              )}
+
+              {venues.filter(venue => venue.approvalStatus === 'rejected').length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                  <h3 className="text-red-800 font-medium flex items-center">
+                    <AlertTriangle className="h-5 w-5 mr-2" />
+                    Rejected Venues
+                  </h3>
+                  <p className="text-red-700 mt-1">
+                    Some of your venues were rejected. Please review the feedback and make necessary changes.
+                  </p>
+                </div>
+              )}
+
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {venues.length > 0 ? (
+                  venues.map((venue) => (
                     <Card key={venue._id} className="overflow-hidden">
                       <div className="h-40 bg-gray-200 relative">
-                        {venue.imageUrl ? (
+                        {venue.images && venue.images.length > 0 ? (
+                          <img 
+                            src={venue.images[0].url} 
+                            alt={venue.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : venue.imageUrl ? (
                           <img 
                             src={venue.imageUrl} 
                             alt={venue.name} 
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <Image className="h-10 w-10 text-gray-400" />
+                          <div className="flex items-center justify-center h-full bg-gray-100">
+                            <Image className="h-12 w-12 text-gray-400" />
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 flex gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="bg-white h-8 w-8 rounded-full"
-                            onClick={() => handleEditVenue(venue._id)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="bg-white h-8 w-8 rounded-full text-red-500 hover:text-red-600"
-                            onClick={() => handleDeleteVenue(venue._id)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
+                        
+                        {/* Status Badge */}
+                        <div className={`absolute top-2 right-2 px-2 py-1 rounded-md text-xs font-medium 
+                          ${venue.approvalStatus === 'approved' ? 'bg-green-100 text-green-800' : 
+                            venue.approvalStatus === 'pending' ? 'bg-amber-100 text-amber-800' : 
+                            'bg-red-100 text-red-800'}`}
+                        >
+                          {venue.approvalStatus === 'approved' ? 'Approved' : 
+                            venue.approvalStatus === 'pending' ? 'Pending Approval' : 
+                            'Rejected'}
                         </div>
                       </div>
+                      
                       <CardContent className="p-4">
-                        <h3 className="font-bold text-lg truncate">{venue.name}</h3>
-                        <div className="flex items-center text-gray-500 text-sm space-x-2 mt-1">
-                          <span className="px-2 py-0.5 bg-gray-100 rounded-full">
-                            {venue.type}
-                          </span>
-                          <span>•</span>
-                          <span>{venue.location}</span>
-                        </div>
-                        <p className="text-gray-600 mt-2 text-sm line-clamp-2">
-                          {venue.description || 'No description provided.'}
-                        </p>
-                        <div className="mt-4 flex justify-end">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/venues/${venue._id}`)}>
-                            View Details
+                        <h3 className="font-semibold text-lg mb-1 truncate">{venue.name}</h3>
+                        <p className="text-gray-500 text-sm mb-3">{venue.type} in {venue.location}</p>
+                        
+                        {venue.approvalStatus === 'rejected' && venue.rejectionReason && (
+                          <div className="bg-red-50 p-2 rounded mb-3 text-sm text-red-800">
+                            <p className="font-semibold">Reason for rejection:</p>
+                            <p>{venue.rejectionReason}</p>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-end space-x-2 mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleEditVenue(venue._id)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => handleDeleteVenue(venue._id)}
+                          >
+                            <Trash className="h-4 w-4 mr-1" />
+                            Delete
                           </Button>
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
-              )}
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12 bg-white rounded-lg shadow-sm">
+                    <Home className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900">No Venues Found</h3>
+                    <p className="mt-1 text-gray-500">You haven't added any venues yet.</p>
+                    <Button className="mt-4" onClick={handleAddNewVenue}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Your First Venue
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
           
@@ -392,45 +476,10 @@ const VenueHostPortal: React.FC = () => {
           {activeTab === 'settings' && (
             <div className="space-y-6">
               <h1 className="text-2xl font-bold text-gray-800">Account Settings</h1>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Venue Information</CardTitle>
-                  <CardDescription>Update your venue's details and contact information</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-md font-medium">Business Details</h3>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
-                        <div>
-                          <p className="text-sm text-gray-500">Venue Name</p>
-                          <p className="text-sm font-medium">{venueHost?.venueName || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Venue Type</p>
-                          <p className="text-sm font-medium">{venueHost?.venueType || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Location</p>
-                          <p className="text-sm font-medium">{venueHost?.venueLocation || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Contact Email</p>
-                          <p className="text-sm font-medium">{venueHost?.email || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Phone</p>
-                          <p className="text-sm font-medium">{venueHost?.phone || 'Not provided'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-end">
-                      <Button>Edit Profile</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <VenueHostSettings 
+                venueHost={venueHost}
+                onUpdate={(updatedVenueHost) => setVenueHost(updatedVenueHost)}
+              />
             </div>
           )}
           

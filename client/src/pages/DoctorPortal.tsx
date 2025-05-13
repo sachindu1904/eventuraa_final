@@ -78,7 +78,6 @@ const DoctorPortal = () => {
               <span className="hidden sm:inline">Patients</span>
             </TabsTrigger>
             <TabsTrigger value="pricing" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">Pricing</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">

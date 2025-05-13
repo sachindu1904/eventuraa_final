@@ -16,18 +16,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/components/ui/sonner';
 import api from '@/utils/api-fetch';
 
+interface VenueImage {
+  _id: string;
+  url: string;
+  public_id: string;
+  caption?: string;
+  isMain: boolean;
+}
+
 interface Venue {
   _id: string;
   name: string;
   type: string;
   location: string;
   description: string;
-  imageUrl?: string;
+  images?: VenueImage[];
+  imageUrl?: string; // Legacy support
   priceRange?: {
     min: number;
     max: number;
     currency: string;
   };
+  approvalStatus: string;
 }
 
 const VenueListPage: React.FC = () => {
@@ -46,7 +56,11 @@ const VenueListPage: React.FC = () => {
         const response = await api.get('/venues');
         
         if (response.success) {
-          setVenues(response.data.venues || []);
+          // Filter only approved venues
+          const approvedVenues = response.data.venues.filter((venue: Venue) => 
+            venue.approvalStatus === 'approved'
+          );
+          setVenues(approvedVenues || []);
         } else {
           toast.error('Failed to load venues');
         }
@@ -60,6 +74,23 @@ const VenueListPage: React.FC = () => {
 
     fetchVenues();
   }, []);
+
+  // Helper function to get the main image or first image from a venue
+  const getVenueMainImage = (venue: Venue) => {
+    if (venue.images && venue.images.length > 0) {
+      // Try to find the main image first
+      const mainImage = venue.images.find(img => img.isMain);
+      // If main image exists, use it, otherwise use the first image
+      return mainImage ? mainImage.url : venue.images[0].url;
+    }
+    // Fall back to legacy imageUrl if no images array
+    return venue.imageUrl || '';
+  };
+
+  // Helper function to check if venue has multiple images
+  const hasMultipleImages = (venue: Venue) => {
+    return venue.images && venue.images.length > 1;
+  };
 
   const filteredVenues = venues.filter(venue => {
     const matchesSearch = searchTerm === '' || 
@@ -165,12 +196,19 @@ const VenueListPage: React.FC = () => {
             {filteredVenues.map((venue) => (
               <Card key={venue._id} className="overflow-hidden h-full flex flex-col">
                 <div className="h-48 bg-gray-200 relative">
-                  {venue.imageUrl ? (
-                    <img 
-                      src={venue.imageUrl} 
-                      alt={venue.name} 
-                      className="w-full h-full object-cover"
-                    />
+                  {getVenueMainImage(venue) ? (
+                    <>
+                      <img 
+                        src={getVenueMainImage(venue)} 
+                        alt={venue.name} 
+                        className="w-full h-full object-cover"
+                      />
+                      {hasMultipleImages(venue) && (
+                        <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs z-10">
+                          {venue.images!.length} Photos
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <Image className="h-12 w-12 text-gray-400" />

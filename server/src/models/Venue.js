@@ -45,11 +45,25 @@ const VenueSchema = new mongoose.Schema({
     min: Number,
     max: Number
   },
-  imageUrl: String,
+  images: [{
+    url: String,
+    public_id: String,
+    caption: String,
+    isMain: { type: Boolean, default: false }
+  }],
   venueHost: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'VenueHost',
     required: true
+  },
+  approvalStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  rejectionReason: {
+    type: String,
+    default: ''
   },
   isActive: {
     type: Boolean,

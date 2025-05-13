@@ -31,11 +31,14 @@ export interface AdminDashboardStats {
     organizers: number;
     doctors: number;
     events: number;
+    venueHosts: number;
+    venues: number;
   };
   active: {
     users: number;
     organizers: number;
     doctors: number;
+    venueHosts: number;
   };
   pendingEvents?: number;
   upcomingEvents: Array<{
@@ -52,6 +55,18 @@ export interface AdminDashboardStats {
     name: string;
     email: string;
     createdAt: string;
+  }>;
+  trendingVenues: Array<{
+    _id: string;
+    name: string;
+    type: string;
+    location: string;
+    averageRating: number;
+    venueHost: {
+      _id: string;
+      name: string;
+      venueName: string;
+    };
   }>;
 }
 

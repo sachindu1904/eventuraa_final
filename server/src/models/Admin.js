@@ -48,6 +48,14 @@ const AdminSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    manageVenues: {
+      type: Boolean,
+      default: false
+    },
+    manageVenueHosts: {
+      type: Boolean,
+      default: false
+    },
     manageContent: {
       type: Boolean,
       default: false

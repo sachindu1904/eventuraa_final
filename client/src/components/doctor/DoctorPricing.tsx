@@ -67,7 +67,6 @@ const DoctorPricing = ({ doctor }: DoctorPricingProps) => {
       <Card className="bg-white">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <DollarSign className="h-5 w-5 mr-2" />
             Set Your Fees
           </CardTitle>
           <CardDescription>

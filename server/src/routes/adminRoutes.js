@@ -6,6 +6,8 @@ const User = require('../models/User');
 const Organizer = require('../models/Organizer');
 const Doctor = require('../models/Doctor');
 const Event = require('../models/Event');
+const Venue = require('../models/Venue');
+const VenueHost = require('../models/VenueHost');
 const bcrypt = require('bcryptjs');
 
 /**
@@ -46,11 +48,14 @@ router.get('/dashboard-stats', authenticate, authorizeUserType(['admin']), async
     const organizerCount = await Organizer.countDocuments();
     const doctorCount = await Doctor.countDocuments();
     const eventCount = await Event.countDocuments();
+    const venueHostCount = await VenueHost.countDocuments();
+    const venueCount = await Venue.countDocuments();
     
     // Get active users
     const activeUsers = await User.countDocuments({ isActive: true });
     const activeOrganizers = await Organizer.countDocuments({ isActive: true });
     const activeDoctors = await Doctor.countDocuments({ isActive: true });
+    const activeVenueHosts = await VenueHost.countDocuments({ isActive: true });
     
     // Get recent events
     const upcomingEvents = await Event.find({ date: { $gte: new Date() } })
@@ -63,6 +68,12 @@ router.get('/dashboard-stats', authenticate, authorizeUserType(['admin']), async
       .sort({ createdAt: -1 })
       .limit(5)
       .select('name email createdAt');
+      
+    // Get trending venues (venues with most bookings or highest ratings)
+    const trendingVenues = await Venue.find({ approvalStatus: 'approved' })
+      .sort({ 'averageRating': -1 })
+      .limit(5)
+      .populate('venueHost', 'name venueName');
     
     res.status(200).json({
       success: true,
@@ -72,15 +83,19 @@ router.get('/dashboard-stats', authenticate, authorizeUserType(['admin']), async
           users: userCount,
           organizers: organizerCount,
           doctors: doctorCount,
-          events: eventCount
+          events: eventCount,
+          venueHosts: venueHostCount,
+          venues: venueCount
         },
         active: {
           users: activeUsers,
           organizers: activeOrganizers,
-          doctors: activeDoctors
+          doctors: activeDoctors,
+          venueHosts: activeVenueHosts
         },
         upcomingEvents,
-        recentUsers
+        recentUsers,
+        trendingVenues
       }
     });
   } catch (error) {
@@ -1042,6 +1057,436 @@ router.post('/seed-admin', async (req, res) => {
       error: error.message
     });
   }
+});
+
+/**
+ * @route GET /api/admin/venues
+ * @desc Get all venues
+ * @access Private (Admin only with manageVenues permission)
+ */
+router.get('/venues', 
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenues']), 
+  async (req, res) => {
+    try {
+      console.log('[ADMIN ROUTES] GET /venues requested');
+      
+      const venues = await Venue.find()
+        .sort({ createdAt: -1 })
+        .populate('venueHost', 'name email companyName');
+      
+      res.status(200).json({
+        success: true,
+        message: 'Venues retrieved successfully',
+        data: {
+          venues
+        }
+      });
+    } catch (error) {
+      console.error('Get venues error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve venues',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route GET /api/admin/venues/pending
+ * @desc Get all pending venues
+ * @access Private (Admin only with manageVenues permission)
+ */
+router.get('/venues/pending',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenues']), 
+  async (req, res) => {
+    try {
+      console.log('[ADMIN ROUTES] GET /venues/pending requested');
+      
+      const pendingVenues = await Venue.find({ approvalStatus: 'pending' })
+        .sort({ createdAt: -1 })
+        .populate('venueHost', 'name email');
+      
+      console.log('[ADMIN ROUTES] Found', pendingVenues.length, 'pending venues');
+      
+      res.status(200).json({
+        success: true,
+        message: 'Pending venues retrieved successfully',
+        data: {
+          venues: pendingVenues
+        }
+      });
+    } catch (error) {
+      console.error('[ADMIN ROUTES] Get pending venues error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve pending venues',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route PUT /api/admin/venues/:venueId/approve
+ * @desc Approve a venue (Admin only)
+ * @access Private (Admin only with manageVenues permission)
+ */
+router.put('/venues/:venueId/approve',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenues']), 
+  async (req, res) => {
+    try {
+      const { venueId } = req.params;
+      
+      // Check if venue exists
+      const venue = await Venue.findById(venueId);
+      
+      if (!venue) {
+        return res.status(404).json({
+          success: false,
+          message: 'Venue not found'
+        });
+      }
+      
+      // Check if venue is already approved or rejected
+      if (venue.approvalStatus !== 'pending') {
+        return res.status(400).json({
+          success: false,
+          message: `Venue is already ${venue.approvalStatus}`
+        });
+      }
+      
+      // Approve venue
+      venue.approvalStatus = 'approved';
+      await venue.save();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Venue approved successfully',
+        data: {
+          venue
+        }
+      });
+    } catch (error) {
+      console.error('Approve venue error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to approve venue',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route PUT /api/admin/venues/:venueId/reject
+ * @desc Reject a venue (Admin only)
+ * @access Private (Admin only with manageVenues permission)
+ */
+router.put('/venues/:venueId/reject',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenues']), 
+  async (req, res) => {
+    try {
+      const { venueId } = req.params;
+      const { rejectionReason } = req.body;
+      
+      if (!rejectionReason || rejectionReason.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Rejection reason is required'
+        });
+      }
+      
+      // Check if venue exists
+      const venue = await Venue.findById(venueId);
+      
+      if (!venue) {
+        return res.status(404).json({
+          success: false,
+          message: 'Venue not found'
+        });
+      }
+      
+      // Check if venue is already approved or rejected
+      if (venue.approvalStatus !== 'pending') {
+        return res.status(400).json({
+          success: false,
+          message: `Venue is already ${venue.approvalStatus}`
+        });
+      }
+      
+      // Reject venue
+      venue.approvalStatus = 'rejected';
+      venue.rejectionReason = rejectionReason;
+      await venue.save();
+      
+      // TODO: Send email notification to venue host about rejection with reason
+      
+      res.status(200).json({
+        success: true,
+        message: 'Venue rejected successfully',
+        data: {
+          venue: {
+            _id: venue._id,
+            name: venue.name,
+            rejectionReason: venue.rejectionReason,
+            approvalStatus: venue.approvalStatus
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Reject venue error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to reject venue',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route GET /api/admin/venue-hosts
+ * @desc Get all venue hosts
+ * @access Private (Admin only with manageVenueHosts permission)
+ */
+router.get('/venue-hosts', 
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenueHosts']), 
+  async (req, res) => {
+    try {
+      console.log('[ADMIN ROUTES] GET /venue-hosts requested');
+      
+      const venueHosts = await VenueHost.find().sort({ createdAt: -1 });
+      
+      // For each venue host, count how many venues they have
+      const venueHostsWithVenueCount = await Promise.all(
+        venueHosts.map(async (host) => {
+          const venueCount = await Venue.countDocuments({ venueHost: host._id });
+          return {
+            ...host.toObject(),
+            totalVenues: venueCount
+          };
+        })
+      );
+      
+      res.status(200).json({
+        success: true,
+        message: 'Venue hosts retrieved successfully',
+        data: {
+          venueHosts: venueHostsWithVenueCount
+        }
+      });
+    } catch (error) {
+      console.error('Get venue hosts error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve venue hosts',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route PUT /api/admin/venue-hosts/:hostId/activate
+ * @desc Activate a venue host
+ * @access Private (Admin only with manageVenueHosts permission)
+ */
+router.put('/venue-hosts/:hostId/activate',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenueHosts']), 
+  async (req, res) => {
+    try {
+      const { hostId } = req.params;
+      
+      const host = await VenueHost.findById(hostId);
+      
+      if (!host) {
+        return res.status(404).json({
+          success: false,
+          message: 'Venue host not found'
+        });
+      }
+      
+      if (host.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: 'Venue host is already active'
+        });
+      }
+      
+      host.isActive = true;
+      await host.save();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Venue host activated successfully',
+        data: {
+          host: {
+            _id: host._id,
+            name: host.name,
+            isActive: host.isActive
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Activate venue host error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to activate venue host',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route PUT /api/admin/venue-hosts/:hostId/deactivate
+ * @desc Deactivate a venue host
+ * @access Private (Admin only with manageVenueHosts permission)
+ */
+router.put('/venue-hosts/:hostId/deactivate',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenueHosts']), 
+  async (req, res) => {
+    try {
+      const { hostId } = req.params;
+      
+      const host = await VenueHost.findById(hostId);
+      
+      if (!host) {
+        return res.status(404).json({
+          success: false,
+          message: 'Venue host not found'
+        });
+      }
+      
+      if (!host.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: 'Venue host is already inactive'
+        });
+      }
+      
+      host.isActive = false;
+      await host.save();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Venue host deactivated successfully',
+        data: {
+          host: {
+            _id: host._id,
+            name: host.name,
+            isActive: host.isActive
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Deactivate venue host error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to deactivate venue host',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route GET /api/admin/venue-hosts/:hostId
+ * @desc Get detailed venue host information
+ * @access Private (Admin only with manageVenueHosts permission)
+ */
+router.get('/venue-hosts/:hostId', 
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenueHosts']), 
+  async (req, res) => {
+    try {
+      const { hostId } = req.params;
+      
+      const venueHost = await VenueHost.findById(hostId);
+      
+      if (!venueHost) {
+        return res.status(404).json({
+          success: false,
+          message: 'Venue host not found'
+        });
+      }
+
+      // Get venue host's venues
+      const venues = await Venue.find({ venueHost: hostId })
+        .sort({ createdAt: -1 })
+        .select('name type location priceRange images approvalStatus isActive createdAt')
+        .lean();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Venue host details retrieved successfully',
+        data: {
+          venueHost: {
+            ...venueHost.toObject(),
+            venues: {
+              count: venues.length,
+              items: venues
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get venue host details error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve venue host details',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route GET /api/admin/venues/:venueId
+ * @desc Get detailed venue information
+ * @access Private (Admin only with manageVenues permission)
+ */
+router.get('/venues/:venueId', 
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageVenues']), 
+  async (req, res) => {
+    try {
+      const { venueId } = req.params;
+      
+      const venue = await Venue.findById(venueId)
+        .populate('venueHost', 'name email companyName phone');
+      
+      if (!venue) {
+        return res.status(404).json({
+          success: false,
+          message: 'Venue not found'
+        });
+      }
+      
+      res.status(200).json({
+        success: true,
+        message: 'Venue details retrieved successfully',
+        data: {
+          venue
+        }
+      });
+    } catch (error) {
+      console.error('Get venue details error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve venue details',
+        error: error.message
+      });
+    }
 });
 
 module.exports = router; 

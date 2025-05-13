@@ -10,6 +10,11 @@ import AdminEventDetailPage from '@/components/admin/AdminEventDetailPage';
 import AdminSettingsPage from '@/components/admin/AdminSettingsPage';
 import AdminReportsPage from '@/components/admin/AdminReportsPage';
 import PendingEventsApproval from '@/components/admin/PendingEventsApproval';
+import AdminVenuesPage from '@/components/admin/AdminVenuesPage';
+import AdminVenueDetailPage from '@/components/admin/AdminVenueDetailPage';
+import PendingVenuesApproval from '@/components/admin/PendingVenuesApproval';
+import AdminVenueHostsPage from '@/components/admin/AdminVenueHostsPage';
+import AdminVenueHostDetailPage from '@/components/admin/AdminVenueHostDetailPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import useAdminData from '@/hooks/useAdminData';
 import { Loader2 } from 'lucide-react';
@@ -54,10 +59,16 @@ const AdminDashboardPage: React.FC = () => {
                 <Route path="/" element={<AdminDashboard admin={admin} />} />
                 <Route path="/users" element={<AdminUsersPage />} />
                 <Route path="/organizers" element={<AdminOrganizersPage />} />
+                <Route path="/venue-hosts" element={<AdminVenueHostsPage />} />
                 <Route path="/doctors" element={<AdminDoctorsPage />} />
                 <Route path="/events" element={<AdminEventsPage />} />
                 <Route path="/events/detail/:eventId" element={<AdminEventDetailPage />} />
                 <Route path="/events/pending" element={<PendingEventsApproval />} />
+                <Route path="/venues" element={<AdminVenuesPage />} />
+                <Route path="/venues/detail/:venueId" element={<AdminVenueDetailPage />} />
+                <Route path="/venues/pending" element={<PendingVenuesApproval />} />
+                <Route path="/venue-hosts" element={<AdminVenueHostsPage />} />
+                <Route path="/venue-hosts/detail/:hostId" element={<AdminVenueHostDetailPage />} />
                 <Route path="/reports" element={<AdminReportsPage />} />
                 <Route path="/admins" element={<div>Admin Management</div>} />
                 <Route path="/settings" element={<AdminSettingsPage />} />

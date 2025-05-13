@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const VenueHost = require('../models/VenueHost');
 const { authenticate, authorizeUserType } = require('../middleware/authMiddleware');
+const { uploadProfileImage, processProfileImage } = require('../middleware/uploadMiddleware');
 
 /**
  * @route   GET /api/venue-host/profile
@@ -80,6 +81,56 @@ router.put('/profile', authenticate, authorizeUserType(['venue-host']), async (r
       error: error.message
     });
   }
+});
+
+/**
+ * @route   PUT /api/venue-host/profile/update-image
+ * @desc    Update venue host profile image
+ * @access  Private (venue-host only)
+ */
+router.put('/profile/update-image', 
+  authenticate, 
+  authorizeUserType(['venue-host']), 
+  uploadProfileImage,
+  processProfileImage,
+  async (req, res) => {
+    try {
+      if (!req.profileImageUrl) {
+        return res.status(400).json({
+          success: false,
+          message: 'No profile image was uploaded'
+        });
+      }
+      
+      // Update the venue host profile with the new image URL
+      const updatedVenueHost = await VenueHost.findByIdAndUpdate(
+        req.user._id,
+        { $set: { profileImage: req.profileImageUrl } },
+        { new: true, runValidators: true }
+      );
+      
+      if (!updatedVenueHost) {
+        return res.status(404).json({
+          success: false,
+          message: 'Venue host not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Profile image updated successfully',
+        data: {
+          profileImage: updatedVenueHost.profileImage
+        }
+      });
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
 });
 
 module.exports = router; 

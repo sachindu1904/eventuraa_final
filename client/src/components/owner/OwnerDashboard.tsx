@@ -52,8 +52,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ owner }) => {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Current Earnings</CardDescription>
-            <CardTitle className="text-2xl flex items-center">
-              <DollarSign className="h-5 w-5 text-green-500 mr-1" /> 
+            <CardTitle className="text-2xl flex items-center"> 
               {owner.currentEarnings.toLocaleString()} LKR
             </CardTitle>
           </CardHeader>

@@ -13,7 +13,9 @@ import {
   Globe,
   FileText,
   HelpCircle,
-  AlertTriangle
+  AlertTriangle,
+  Building,
+  LandPlot
 } from 'lucide-react';
 import { AdminData } from '@/hooks/useAdminData';
 import useAuth from '@/hooks/useAuth';
@@ -53,6 +55,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { name: 'Dashboard', path: '/admin-dashboard', icon: <Home size={20} /> },
     { name: 'Users', path: '/admin-dashboard/users', icon: <Users size={20} /> },
     { name: 'Organizers', path: '/admin-dashboard/organizers', icon: <Globe size={20} /> },
+    { name: 'Venue Hosts', path: '/admin-dashboard/venue-hosts', icon: <Building size={20} /> },
     { name: 'Doctors', path: '/admin-dashboard/doctors', icon: <ClipboardList size={20} /> },
     { 
       name: 'Events', 
@@ -61,6 +64,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       submenu: [
         { name: 'All Events', path: '/admin-dashboard/events' },
         { name: 'Pending Approval', path: '/admin-dashboard/events/pending', badge: 'new' }
+      ]
+    },
+    { 
+      name: 'Venues', 
+      path: '/admin-dashboard/venues', 
+      icon: <LandPlot size={20} />,
+      submenu: [
+        { name: 'All Venues', path: '/admin-dashboard/venues' },
+        { name: 'Pending Approval', path: '/admin-dashboard/venues/pending', badge: 'new' }
       ]
     },
     { name: 'Reports', path: '/admin-dashboard/reports', icon: <BarChart3 size={20} /> },

@@ -62,6 +62,10 @@ const VenueHostSchema = new mongoose.Schema({
     type: String,
     default: '/default-venue-logo.png'
   },
+  profileImage: {
+    type: String,
+    default: '/default-profile.png'
+  },
   coverImage: {
     type: String
   },

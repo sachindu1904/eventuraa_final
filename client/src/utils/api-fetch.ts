@@ -128,19 +128,42 @@ const api = {
   get: <T>(endpoint: string, options?: RequestInit) => 
     apiFetch<T>(endpoint, { ...options, method: 'GET' }),
   
-  post: <T>(endpoint: string, data?: any, options?: RequestInit) => 
-    apiFetch<T>(endpoint, { 
+  post: <T>(endpoint: string, data?: any, options?: RequestInit) => {
+    // Check if data is FormData and handle it accordingly
+    if (data instanceof FormData) {
+      // For FormData, don't set Content-Type as browser will set it with boundary
+      return apiFetch<T>(endpoint, {
+        ...options,
+        method: 'POST',
+        body: data // Use FormData directly as body
+      });
+    }
+    
+    // For JSON data, stringify it
+    return apiFetch<T>(endpoint, { 
       ...options, 
       method: 'POST',
-      body: JSON.stringify(data)
-    }),
+      body: data ? JSON.stringify(data) : undefined
+    });
+  },
   
-  put: <T>(endpoint: string, data?: any, options?: RequestInit) => 
-    apiFetch<T>(endpoint, { 
+  put: <T>(endpoint: string, data?: any, isFormData: boolean = false, options?: RequestInit) => {
+    // Check if data is FormData or isFormData flag is set
+    if (data instanceof FormData || isFormData) {
+      return apiFetch<T>(endpoint, {
+        ...options, 
+        method: 'PUT',
+        body: data // Use data directly as FormData
+      });
+    }
+    
+    // For regular JSON data
+    return apiFetch<T>(endpoint, { 
       ...options, 
       method: 'PUT',
-      body: JSON.stringify(data)
-    }),
+      body: data ? JSON.stringify(data) : undefined
+    });
+  },
   
   patch: <T>(endpoint: string, data?: any, options?: RequestInit) => 
     apiFetch<T>(endpoint, { 
@@ -152,7 +175,7 @@ const api = {
   delete: <T>(endpoint: string, options?: RequestInit) => 
     apiFetch<T>(endpoint, { ...options, method: 'DELETE' }),
     
-  // New method for uploading form data with files
+  // Legacy method for uploading form data with files
   uploadFormData: <T>(endpoint: string, formData: FormData, options?: RequestInit) => {
     // For FormData, we should not set Content-Type as the browser will set it with boundary
     const headers = { ...options?.headers };
