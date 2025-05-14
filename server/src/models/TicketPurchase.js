@@ -56,7 +56,7 @@ const TicketPurchaseSchema = new mongoose.Schema({
   payment: {
     method: {
       type: String,
-      enum: ['credit-card', 'paypal'],
+      enum: ['credit_card', 'paypal'],
       required: true
     },
     status: {

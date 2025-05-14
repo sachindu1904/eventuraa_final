@@ -63,7 +63,7 @@ const TicketCheckoutPage: React.FC = () => {
     email: userData?.email || '',
     phoneNumber: '',
   });
-  const [paymentMethod, setPaymentMethod] = useState<'credit-card' | 'paypal'>('credit-card');
+  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'paypal'>('credit_card');
   const [cardDetails, setCardDetails] = useState({
     cardNumber: '',
     cardHolderName: '',
@@ -167,7 +167,7 @@ const TicketCheckoutPage: React.FC = () => {
     }
 
     // Validate payment information based on selected method
-    if (paymentMethod === 'credit-card') {
+    if (paymentMethod === 'credit_card') {
       if (!cardDetails.cardNumber || !cardDetails.cardHolderName || 
           !cardDetails.expiryDate || !cardDetails.cvv) {
         toast.error('Please complete all card details');
@@ -204,9 +204,9 @@ const TicketCheckoutPage: React.FC = () => {
       });
 
     // Prepare payment data based on selected method
-    const paymentData = paymentMethod === 'credit-card' 
+    const paymentData = paymentMethod === 'credit_card' 
       ? { 
-          method: 'credit-card',
+          method: 'credit_card',
           details: {
             // Only send non-sensitive info for demonstration
             // In a real app, you'd use a payment processor SDK
@@ -446,13 +446,13 @@ const TicketCheckoutPage: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <RadioGroup 
-                    value={paymentMethod} 
-                    onValueChange={(value) => setPaymentMethod(value as 'credit-card' | 'paypal')}
-                    className="space-y-4"
+                    className="flex flex-col space-y-2 mt-4"
+                    value={paymentMethod}
+                    onValueChange={(value) => setPaymentMethod(value as 'credit_card' | 'paypal')}
                   >
                     <div className="flex items-center space-x-2 border rounded-md p-3 hover:bg-gray-50 cursor-pointer">
-                      <RadioGroupItem value="credit-card" id="credit-card" />
-                      <Label htmlFor="credit-card" className="flex items-center cursor-pointer">
+                      <RadioGroupItem value="credit_card" id="credit_card" />
+                      <Label htmlFor="credit_card" className="flex items-center cursor-pointer">
                         <CreditCard className="h-5 w-5 mr-2 text-gray-600" />
                         <span>Credit / Debit Card</span>
                       </Label>
@@ -470,7 +470,7 @@ const TicketCheckoutPage: React.FC = () => {
                     </div>
                   </RadioGroup>
                   
-                  {paymentMethod === 'credit-card' && (
+                  {paymentMethod === 'credit_card' && (
                     <div className="mt-4 space-y-4">
                       <div>
                         <Label htmlFor="cardNumber">Card Number</Label>
@@ -606,7 +606,7 @@ const TicketCheckoutPage: React.FC = () => {
                     <div className="flex items-center text-sm text-gray-600">
                       <span>Payment Method:</span>
                       <span className="ml-auto">
-                        {paymentMethod === 'credit-card' ? (
+                        {paymentMethod === 'credit_card' ? (
                           <div className="flex items-center">
                             <CreditCard className="h-4 w-4 mr-1" />
                             <span>Credit / Debit Card</span>

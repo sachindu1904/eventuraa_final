@@ -92,7 +92,7 @@ const bookingFormSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z.string().min(6, "Phone number is required"),
   specialRequests: z.string().optional(),
-  paymentMethod: z.enum(['credit-card', 'paypal']),
+  paymentMethod: z.enum(['credit_card', 'paypal']),
   // Credit card fields
   cardNumber: z.string().optional().refine(
     (val) => !val || val.replace(/\s/g, '').length >= 15,
@@ -130,7 +130,7 @@ const BookingPage: React.FC = () => {
       email: userData?.email || '',
       phone: '',
       specialRequests: '',
-      paymentMethod: 'credit-card',
+      paymentMethod: 'credit_card',
       cardNumber: '',
       cardHolderName: '',
       expiryDate: '',
@@ -237,9 +237,9 @@ const BookingPage: React.FC = () => {
     
     try {
       // Prepare payment data based on selected method
-      const paymentData = values.paymentMethod === 'credit-card' 
+      const paymentData = values.paymentMethod === 'credit_card' 
         ? { 
-            method: 'credit-card',
+            method: 'credit_card',
             details: {
               // Only send non-sensitive info for demonstration
               // In a real app, you'd use a payment processor SDK
@@ -565,8 +565,8 @@ const BookingPage: React.FC = () => {
                               className="space-y-4"
                             >
                               <div className="flex items-center space-x-2 border rounded-md p-3 hover:bg-gray-50 cursor-pointer">
-                                <RadioGroupItem value="credit-card" id="credit-card" />
-                                <Label htmlFor="credit-card" className="flex items-center cursor-pointer">
+                                <RadioGroupItem value="credit_card" id="credit_card" />
+                                <Label htmlFor="credit_card" className="flex items-center cursor-pointer">
                                   <CreditCard className="h-5 w-5 mr-2 text-gray-600" />
                                   <span>Credit / Debit Card</span>
                                 </Label>
@@ -589,7 +589,7 @@ const BookingPage: React.FC = () => {
                       )}
                     />
                     
-                    {watchPaymentMethod === 'credit-card' && (
+                    {watchPaymentMethod === 'credit_card' && (
                       <div className="mt-4 space-y-4">
                         <FormField
                           control={form.control}

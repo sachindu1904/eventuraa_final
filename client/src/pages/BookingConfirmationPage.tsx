@@ -279,29 +279,32 @@ const BookingConfirmationPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center mb-4">
-                {booking.payment.method === 'credit-card' ? (
-                  <>
-                    <CreditCard className="h-5 w-5 mr-2 text-gray-600" />
-                    <span className="font-medium">
-                      Credit/Debit Card
-                      {booking.payment.details?.lastFourDigits && (
-                        <span className="ml-1 text-gray-500">
-                          ending in {booking.payment.details.lastFourDigits}
-                        </span>
-                      )}
-                    </span>
-                  </>
-                ) : booking.payment.method === 'paypal' ? (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5 mr-2 text-[#003087] fill-current">
-                      <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-1.378-1.012-3.35-1.207-5.836-1.207h-5.92c-.101 0-.187.077-.202.178L6.65 18.447c0 .025 0 .046.012.07 0 .024.012.047.024.07.011.023.035.035.058.047.023.012.047.012.07.012H9.52c.135 0 .26-.077.29-.212l.74-4.773.023-.13.012-.071c.023-.142.15-.236.29-.236h.607c3.656 0 6.56-1.505 7.423-5.858.312-1.59.135-2.921-.683-3.857z"></path>
-                      <path d="M21.047 6.893c-.07.4-.16.81-.27 1.232-.98 5.05-4.349 6.796-8.646 6.796h-2.19c-.522 0-.967.382-1.048.9l-1.12 7.106c-.048.307.17.593.48.593h3.96c.4 0 .739-.293.8-.693l.036-.18.654-4.195.043-.224c.059-.4.4-.693.8-.693h.503c3.254 0 5.806-1.336 6.557-5.207.308-1.621.15-2.977-.664-3.932a3.592 3.592 0 0 0-.705-.503z"></path>
-                    </svg>
-                    <span className="font-medium">PayPal</span>
-                  </>
-                ) : (
-                  <span className="font-medium">{booking.payment.method}</span>
-                )}
+                <dt className="text-sm font-medium text-gray-500">Payment Method</dt>
+                <dd className="mt-1 text-sm text-gray-900 flex items-center">
+                  {booking.payment.method === 'credit_card' ? (
+                    <>
+                      <CreditCard className="h-5 w-5 mr-2 text-gray-600" />
+                      <span className="font-medium">
+                        Credit/Debit Card
+                        {booking.payment.details?.lastFourDigits && (
+                          <span className="ml-1 text-gray-500">
+                            ending in {booking.payment.details.lastFourDigits}
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  ) : booking.payment.method === 'paypal' ? (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5 mr-2 text-[#003087] fill-current">
+                        <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-1.378-1.012-3.35-1.207-5.836-1.207h-5.92c-.101 0-.187.077-.202.178L6.65 18.447c0 .025 0 .046.012.07 0 .024.012.047.024.07.011.023.035.035.058.047.023.012.047.012.07.012H9.52c.135 0 .26-.077.29-.212l.74-4.773.023-.13.012-.071c.023-.142.15-.236.29-.236h.607c3.656 0 6.56-1.505 7.423-5.858.312-1.59.135-2.921-.683-3.857z"></path>
+                        <path d="M21.047 6.893c-.07.4-.16.81-.27 1.232-.98 5.05-4.349 6.796-8.646 6.796h-2.19c-.522 0-.967.382-1.048.9l-1.12 7.106c-.048.307.17.593.48.593h3.96c.4 0 .739-.293.8-.693l.036-.18.654-4.195.043-.224c.059-.4.4-.693.8-.693h.503c3.254 0 5.806-1.336 6.557-5.207.308-1.621.15-2.977-.664-3.932a3.592 3.592 0 0 0-.705-.503z"></path>
+                      </svg>
+                      <span className="font-medium">PayPal</span>
+                    </>
+                  ) : (
+                    <span className="font-medium">{booking.payment.method}</span>
+                  )}
+                </dd>
                 
                 <Badge className={
                   booking.payment.status === 'completed' ? 'bg-green-500 ml-2' : 

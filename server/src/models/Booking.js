@@ -31,7 +31,7 @@ const BookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+    enum: ['pending', 'confirmed', 'cancelled', 'completed', 'rejected'],
     default: 'pending'
   },
   contactInfo: {
@@ -59,14 +59,32 @@ const BookingSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'processing', 'paid', 'failed', 'refunded'],
-    default: 'pending'
-  },
-  paymentId: {
-    type: String
-    // Will be populated when payment is processed
+  payment: {
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'paid', 'failed', 'refunded', 'refund_pending'],
+      default: 'pending'
+    },
+    method: {
+      type: String,
+      enum: ['credit_card', 'paypal', 'ezcash', 'alipay'],
+      required: true
+    },
+    transactionId: {
+      type: String
+    },
+    refundId: {
+      type: String
+    },
+    refundReason: {
+      type: String
+    },
+    refundDate: {
+      type: Date
+    },
+    cardLastFour: {
+      type: String
+    }
   },
   bookingReference: {
     type: String,
@@ -77,6 +95,14 @@ const BookingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
     // May be null for non-registered users
+  },
+  venueHost: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  rejectionReason: {
+    type: String
   },
   createdAt: {
     type: Date,

@@ -15,7 +15,8 @@ import {
   HelpCircle,
   AlertTriangle,
   Building,
-  LandPlot
+  LandPlot,
+  CircleExclamation
 } from 'lucide-react';
 import { AdminData } from '@/hooks/useAdminData';
 import useAuth from '@/hooks/useAuth';

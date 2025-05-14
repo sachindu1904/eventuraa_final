@@ -15,6 +15,7 @@ import AdminVenueDetailPage from '@/components/admin/AdminVenueDetailPage';
 import PendingVenuesApproval from '@/components/admin/PendingVenuesApproval';
 import AdminVenueHostsPage from '@/components/admin/AdminVenueHostsPage';
 import AdminVenueHostDetailPage from '@/components/admin/AdminVenueHostDetailPage';
+import AdminBookingsPage from '@/components/admin/AdminBookingsPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import useAdminData from '@/hooks/useAdminData';
 import { Loader2 } from 'lucide-react';
@@ -148,7 +149,7 @@ const AdminDashboardPage: React.FC = () => {
                 <Route path="/admins" element={<div>Admin Management</div>} />
                 <Route path="/settings" element={<AdminSettingsPage />} />
                 <Route path="/support" element={<div>Support</div>} />
-                <Route path="/bookings" element={<BookingsList isAdmin={true} />} />
+                <Route path="/bookings" element={<AdminBookingsPage />} />
                 <Route path="*" element={<Navigate to="/admin-dashboard" />} />
               </Routes>
             </div>

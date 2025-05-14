@@ -75,7 +75,7 @@ const bookingSchema = new mongoose.Schema({
   payment: {
     method: {
       type: String,
-      enum: ['credit-card', 'paypal', 'cash'],
+      enum: ['credit_card', 'paypal', 'cash'],
       required: true
     },
     status: {

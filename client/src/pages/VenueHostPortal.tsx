@@ -22,11 +22,14 @@ import {
   Image,
   AlertTriangle,
   User,
+  Search,
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import api from '@/utils/api-fetch';
 import VenueHostSettings from '@/components/venuehost/VenueHostSettings';
 import BookingsList from '@/components/BookingsList';
+import CustomersList from '@/components/CustomersList';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -34,6 +37,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface VenueImage {
   _id: string;
@@ -498,10 +509,12 @@ const VenueHostPortal: React.FC = () => {
           )}
           
           {activeTab === 'customers' && (
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-800">Customers</h2>
-              <p className="text-gray-600 mt-2">Manage your customers and their information.</p>
-              {/* Customer management UI would go here */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800">Customers</h2>
+              </div>
+              
+              <CustomersList />
             </div>
           )}
           
