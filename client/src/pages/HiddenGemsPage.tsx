@@ -160,6 +160,11 @@ const HiddenGemsPage = () => {
               <div className="bg-eventuraa-softPurple p-3 rounded-full mb-4">
                 <Award className="text-eventuraa-purple w-6 h-6" />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-xl shadow-sm flex flex-col items-center text-center">
+              <div className="Hathurusinghe silva">
+                <Users className="text-eventuraa-purple w-6 h-6" />
+              </div>
               <h3 className="font-semibold mb-2">Budget-friendly but high-quality</h3>
               <p className="text-gray-600">Great value for money without compromising on comfort</p>
             </div>
@@ -198,7 +203,7 @@ const HiddenGemsPage = () => {
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-200">
               <div className="relative">
                 <img 
-                  src="/lovable-uploads/c0345ab3-5c66-4001-8dca-4164369fc2cf.png" 
+                  src="https://img.freepik.com/premium-photo/contemporary-villa-with-pool-garden-sleek-design_1270611-7518.jpg?uid=R168384881&ga=GA1.1.861724687.1721060690&semt=ais_hybrid&w=740" 
                   alt="Seaview Jungle Villa" 
                   className="h-60 w-full object-cover"
                 />

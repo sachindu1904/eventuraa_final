@@ -1489,4 +1489,226 @@ router.get('/venues/:venueId',
     }
 });
 
+/**
+ * @route PUT /api/admin/doctors/:doctorId/verify
+ * @desc Verify a doctor
+ * @access Private (Admin only with manageDoctors permission)
+ */
+router.put('/doctors/:doctorId/verify',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageDoctors']), 
+  async (req, res) => {
+    try {
+      const { doctorId } = req.params;
+      
+      const doctor = await Doctor.findById(doctorId);
+      
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Doctor not found'
+        });
+      }
+      
+      if (doctor.verificationStatus.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Doctor is already verified'
+        });
+      }
+      
+      doctor.verificationStatus.isVerified = true;
+      doctor.verificationStatus.verificationDate = new Date();
+      await doctor.save();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Doctor verified successfully',
+        data: {
+          doctor: {
+            _id: doctor._id,
+            name: doctor.name,
+            email: doctor.email,
+            verificationStatus: doctor.verificationStatus
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Verify doctor error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to verify doctor',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route PUT /api/admin/doctors/:doctorId/unverify
+ * @desc Unverify a doctor
+ * @access Private (Admin only with manageDoctors permission)
+ */
+router.put('/doctors/:doctorId/unverify',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageDoctors']), 
+  async (req, res) => {
+    try {
+      const { doctorId } = req.params;
+      
+      const doctor = await Doctor.findById(doctorId);
+      
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Doctor not found'
+        });
+      }
+      
+      if (!doctor.verificationStatus.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Doctor is already unverified'
+        });
+      }
+      
+      doctor.verificationStatus.isVerified = false;
+      doctor.verificationStatus.verificationDate = undefined;
+      await doctor.save();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Doctor verification revoked successfully',
+        data: {
+          doctor: {
+            _id: doctor._id,
+            name: doctor.name,
+            email: doctor.email,
+            verificationStatus: doctor.verificationStatus
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Unverify doctor error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to revoke doctor verification',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route PUT /api/admin/organizers/:organizerId/verify
+ * @desc Verify an organizer
+ * @access Private (Admin only with manageOrganizers permission)
+ */
+router.put('/organizers/:organizerId/verify',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageOrganizers']), 
+  async (req, res) => {
+    try {
+      const { organizerId } = req.params;
+      
+      const organizer = await Organizer.findById(organizerId);
+      
+      if (!organizer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Organizer not found'
+        });
+      }
+      
+      if (organizer.verificationStatus.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Organizer is already verified'
+        });
+      }
+      
+      organizer.verificationStatus.isVerified = true;
+      organizer.verificationStatus.verificationDate = new Date();
+      await organizer.save();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Organizer verified successfully',
+        data: {
+          organizer: {
+            _id: organizer._id,
+            name: organizer.name,
+            companyName: organizer.companyName,
+            email: organizer.email,
+            verificationStatus: organizer.verificationStatus
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Verify organizer error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to verify organizer',
+        error: error.message
+      });
+    }
+});
+
+/**
+ * @route PUT /api/admin/organizers/:organizerId/unverify
+ * @desc Unverify an organizer
+ * @access Private (Admin only with manageOrganizers permission)
+ */
+router.put('/organizers/:organizerId/unverify',
+  authenticate, 
+  authorizeUserType(['admin']), 
+  authorizeAdminPermission(['manageOrganizers']), 
+  async (req, res) => {
+    try {
+      const { organizerId } = req.params;
+      
+      const organizer = await Organizer.findById(organizerId);
+      
+      if (!organizer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Organizer not found'
+        });
+      }
+      
+      if (!organizer.verificationStatus.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Organizer is already unverified'
+        });
+      }
+      
+      organizer.verificationStatus.isVerified = false;
+      organizer.verificationStatus.verificationDate = undefined;
+      await organizer.save();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Organizer verification revoked successfully',
+        data: {
+          organizer: {
+            _id: organizer._id,
+            name: organizer.name,
+            companyName: organizer.companyName,
+            email: organizer.email,
+            verificationStatus: organizer.verificationStatus
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Unverify organizer error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to revoke organizer verification',
+        error: error.message
+      });
+    }
+});
+
 module.exports = router; 

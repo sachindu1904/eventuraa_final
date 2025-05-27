@@ -1,7 +1,7 @@
 require('dotenv').config({ path: '../.env' });
 const axios = require('axios');
 
-const API_URL = 'http://localhost:5000'; // Change if your server runs on a different port
+const API_URL = 'http://localhost:5001'; // Change if your server runs on a different port
 
 // Test credentials
 const credentials = {

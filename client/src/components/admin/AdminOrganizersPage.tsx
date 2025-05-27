@@ -108,6 +108,22 @@ const AdminOrganizersPage: React.FC = () => {
     fetchOrganizers(); // Refresh the organizers list
   };
 
+  const handleVerifyOrganizer = async (organizerId: string, isVerified: boolean) => {
+    try {
+      const endpoint = isVerified ? 'unverify' : 'verify';
+      const action = isVerified ? 'revoked' : 'verified';
+      
+      await api.put(`/admin/organizers/${organizerId}/${endpoint}`);
+      
+      toast.success(`Organizer verification ${action} successfully`);
+      fetchOrganizers(); // Refresh the organizers list
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'An unknown error occurred';
+      toast.error(`Error updating verification: ${errorMessage}`);
+      console.error('Error updating organizer verification:', err);
+    }
+  };
+
   const openOrganizerProfile = (organizerId: string) => {
     setSelectedOrganizerId(organizerId);
     setIsProfileModalOpen(true);
@@ -221,10 +237,15 @@ const AdminOrganizersPage: React.FC = () => {
                             <Mail className="mr-2 h-4 w-4" />
                             <span>Send Email</span>
                           </DropdownMenuItem>
-                          {!organizer.verificationStatus.isVerified && (
-                            <DropdownMenuItem>
+                          {!organizer.verificationStatus.isVerified ? (
+                            <DropdownMenuItem onClick={() => handleVerifyOrganizer(organizer._id, false)}>
                               <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
                               <span className="text-green-600">Verify Organizer</span>
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleVerifyOrganizer(organizer._id, true)}>
+                              <XCircle className="mr-2 h-4 w-4 text-red-600" />
+                              <span className="text-red-600">Revoke Verification</span>
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />

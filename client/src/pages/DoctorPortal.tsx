@@ -1,125 +1,252 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { 
-  User, 
-  ShieldCheck, 
-  Calendar, 
-  MessageSquare, 
-  Edit, 
-  DollarSign, 
-  Video, 
-  Phone, 
-  Mail, 
-  Lock,
-  Star,
-  FileText,
-  Settings,
-  Info
-} from 'lucide-react';
+import { User, MapPin, Settings, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+// Import new minimal components
 import DoctorDashboard from '@/components/doctor/DoctorDashboard';
 import DoctorProfile from '@/components/doctor/DoctorProfile';
-import DoctorPricing from '@/components/doctor/DoctorPricing';
-import PatientCommunication from '@/components/doctor/PatientCommunication';
-import DoctorSettings from '@/components/doctor/DoctorSettings';
-import DoctorHeader from '@/components/doctor/DoctorHeader';
+import DoctorLocations from '@/components/doctor/DoctorLocations';
+
+interface Location {
+  _id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone?: string;
+}
+
+interface Doctor {
+  _id: string;
+  name: string;
+  specialty: string;
+  email: string;
+  phone?: string;
+  regNumber: string;
+  experience: number;
+  profileImage?: string;
+  consultationFee?: { amount: number; currency: string; };
+  languages?: string[];
+  bio?: string;
+  isActive: boolean;
+  verificationStatus?: { isVerified: boolean; verificationDate?: string; };
+  appointmentsToday?: number;
+  urgentAppointments?: number;
+  unreadMessages?: number;
+  locations?: Location[];
+}
+
+interface ApiResponse {
+  success: boolean;
+  data?: {
+    doctor: Doctor;
+  };
+  message?: string;
+}
 
 const DoctorPortal = () => {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [doctorData, setDoctorData] = useState<Doctor | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Mock doctor data
-  const doctorData = {
-    name: "Dr. Anusha Perera",
-    qualification: "MBBS, MD",
-    specialization: "Cardiologist",
-    hospital: "Provincial General Hospital, Colombo",
-    regNo: "SLMC 45632",
-    experience: 15,
-    photo: "/lovable-uploads/c0345ab3-5c66-4001-8dca-4164369fc2cf.png",
-    appointmentsToday: 5,
-    urgentAppointments: 2,
-    unreadMessages: 3,
-    languages: ["English", "Sinhala", "Tamil"],
-    videoConsultationFee: 4000,
-    inPersonFee: 5000,
-    isVerified: true
+  // Check authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userType = localStorage.getItem('userType');
+    
+    if (!token || userType !== 'doctor') {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to access the doctor portal.",
+        variant: "destructive",
+      });
+      navigate('/doctor-login');
+      return;
+    }
+    
+    // If authenticated, proceed to fetch profile
+    fetchDoctorProfile();
+  }, [navigate, toast]);
+  
+  const fetchDoctorProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch('http://localhost:5001/api/doctors/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token is invalid or expired
+          localStorage.removeItem('token');
+          localStorage.removeItem('userType');
+          localStorage.removeItem('doctorData');
+          toast({
+            title: "Session Expired",
+            description: "Please log in again.",
+            variant: "destructive",
+          });
+          navigate('/doctor-login');
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data: ApiResponse = await response.json();
+      
+      if (data.success && data.data?.doctor) {
+        setDoctorData(data.data.doctor);
+      } else {
+        throw new Error(data.message || 'Failed to fetch doctor profile');
+      }
+    } catch (err) {
+      console.error('Error fetching doctor profile:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load your profile. Please try again later.';
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleProfileUpdate = (updatedDoctor: Doctor) => {
+    setDoctorData(updatedDoctor);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('doctorData');
+    toast({
+      title: "Logged out successfully",
+      description: "You have been logged out of the doctor portal.",
+    });
+    navigate('/doctor-login');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !doctorData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold text-red-600 mb-2">Error</h2>
+            <p className="text-gray-600 mb-4">{error || 'Unable to load doctor data'}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DoctorHeader doctor={doctorData} />
-      
-      <div className="container-custom py-6">
-        <Tabs 
-          defaultValue="dashboard" 
-          value={currentTab} 
-          onValueChange={setCurrentTab}
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-5">
+      {/* Simple Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Doctor Portal</h1>
+              <p className="text-gray-600">Welcome back, Dr. {doctorData.name}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{doctorData.name}</p>
+                <p className="text-sm text-gray-500">{doctorData.specialty}</p>
+              </div>
+              <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-medium">
+                  {doctorData.name.charAt(0)}
+                </span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
+              <Settings className="h-4 w-4" />
+              Dashboard
             </TabsTrigger>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Profile</span>
+              Profile
             </TabsTrigger>
-            <TabsTrigger value="patients" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">Patients</span>
-            </TabsTrigger>
-            <TabsTrigger value="pricing" className="flex items-center gap-2">
-              <span className="hidden sm:inline">Pricing</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Settings</span>
+            <TabsTrigger value="locations" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Locations
             </TabsTrigger>
           </TabsList>
           
-          <div className="mt-6">
-            <TabsContent value="dashboard">
-              <DoctorDashboard doctor={doctorData} />
-            </TabsContent>
-            
-            <TabsContent value="profile">
-              <DoctorProfile doctor={doctorData} />
-            </TabsContent>
-            
-            <TabsContent value="patients">
-              <PatientCommunication doctor={doctorData} />
-            </TabsContent>
-            
-            <TabsContent value="pricing">
-              <DoctorPricing doctor={doctorData} />
-            </TabsContent>
-            
-            <TabsContent value="settings">
-              <DoctorSettings doctor={doctorData} />
-            </TabsContent>
-          </div>
+          <TabsContent value="dashboard">
+            <DoctorDashboard doctor={doctorData} />
+          </TabsContent>
+          
+          <TabsContent value="profile">
+            <DoctorProfile 
+              doctor={doctorData} 
+              onUpdate={handleProfileUpdate}
+            />
+          </TabsContent>
+          
+          <TabsContent value="locations">
+            <DoctorLocations doctor={doctorData} />
+          </TabsContent>
         </Tabs>
-        
-        {/* Legal Disclaimers */}
-        <div className="mt-10 text-xs text-gray-500 border-t pt-4">
-          <p className="mb-2 flex items-center">
-            <Info className="h-3 w-3 mr-1" /> 
-            <strong>Telemedicine Legal Disclaimer:</strong> All consultations must comply with the Sri Lanka Medical Council guidelines for telemedicine practice.
-          </p>
-          <p>Patient data is protected under Sri Lankan data protection regulations. Use of this portal constitutes agreement to maintain patient confidentiality and adhere to medical ethics guidelines.</p>
-        </div>
       </div>
     </div>
   );
 };
 
-export default DoctorPortal;
+export default DoctorPortal; 

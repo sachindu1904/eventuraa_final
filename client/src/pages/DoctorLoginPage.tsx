@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -35,7 +34,7 @@ const DoctorLoginPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!emailOrPhone || !password) {
+    if (!emailOrPhone || !password || !regNumber) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -47,13 +46,46 @@ const DoctorLoginPage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Mock authentication - replace with actual auth when implemented
-      setTimeout(() => {
+      // Real authentication with API
+      const response = await fetch('http://localhost:5001/api/auth/login/doctor', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: emailOrPhone,
+          password: password,
+          userType: 'doctor',
+          regNumber: regNumber
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Authentication failed');
+      }
+
+      // Store the JWT token
+      if (data.data?.token) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('userType', 'doctor');
+        
+        // Store doctor info if available
+        if (data.data.user || data.data.doctor) {
+          const doctorData = data.data.user || data.data.doctor;
+          localStorage.setItem('doctorData', JSON.stringify(doctorData));
+        }
+
         toast.success('Successfully logged in!');
         navigate('/doctor-portal');
-      }, 1500);
+      } else {
+        throw new Error('No authentication token received');
+      }
     } catch (error) {
-      toast.error('Authentication failed. Please try again.');
+      console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -161,6 +193,22 @@ const DoctorLoginPage: React.FC = () => {
                       )}
                     </div>
                     {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="login-regNumber">SLMC Registration Number</Label>
+                    <div className="relative">
+                      <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input 
+                        id="login-regNumber" 
+                        type="text" 
+                        placeholder="e.g., SL-MED-1234" 
+                        className="pl-10"
+                        value={regNumber}
+                        onChange={(e) => setRegNumber(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
                   
                   <div className="space-y-2">

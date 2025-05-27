@@ -1,9 +1,64 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Music, MartiniIcon, Calendar, PartyPopper, Disc } from "lucide-react";
 import { Link } from 'react-router-dom';
+import api from '@/utils/api-fetch';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Venue {
+  _id: string;
+  name: string;
+  type: string;
+  location?: string;
+  address?: {
+    city?: string;
+    district?: string;
+  };
+  description?: string;
+  images?: Array<{
+    url: string;
+    isMain?: boolean;
+  }>;
+  facilities?: string[];
+  amenities?: string[];
+  businessHours?: {
+    open?: string;
+    close?: string;
+  };
+}
+
+interface Event {
+  _id: string;
+  title: string;
+  date: string;
+  location: {
+    name: string;
+    city: string;
+    address: string;
+  };
+  images: string[];
+  category: string;
+  organizer: {
+    _id: string;
+    name: string;
+  };
+  description: string;
+}
+
+interface Organizer {
+  _id: string;
+  name: string;
+  description?: string;
+  venues?: string[];
+  venueNames?: string[];
+  socialMedia?: {
+    instagram?: string;
+    facebook?: string;
+    twitter?: string;
+  };
+  profileImage?: string;
+}
 
 const NightlifeCard = ({ 
   name, 
@@ -124,7 +179,8 @@ const EventCard = ({
   image,
   venue,
   organizer,
-  description
+  description,
+  id
 }: {
   name: string;
   date: string;
@@ -132,6 +188,7 @@ const EventCard = ({
   venue: string;
   organizer: string;
   description: string;
+  id?: string;
 }) => {
   return (
     <Card className="overflow-hidden transition-all hover:shadow-lg border border-gray-100 h-full flex flex-col">
@@ -161,7 +218,7 @@ const EventCard = ({
         <p className="text-sm text-gray-600">{description}</p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Link to="/nightlife" className="w-full">
+        <Link to={id ? `/events/${id}` : "/events"} className="w-full">
           <Button className="w-full bg-eventuraa-blue hover:bg-blue-600">
             Book Tickets
           </Button>
@@ -171,119 +228,156 @@ const EventCard = ({
   );
 };
 
+const CardSkeleton = () => (
+  <Card className="overflow-hidden border border-gray-100 h-full flex flex-col">
+    <div className="h-48 relative">
+      <Skeleton className="h-full w-full" />
+      <div className="absolute top-3 left-3 z-10">
+        <Skeleton className="h-6 w-20 rounded-md" />
+      </div>
+    </div>
+    <div className="p-4">
+      <Skeleton className="h-7 w-3/4 mb-2" />
+      <Skeleton className="h-5 w-1/2 mb-3" />
+      <Skeleton className="h-4 w-4/5 mb-1" />
+      <Skeleton className="h-4 w-3/4 mb-1" />
+      <Skeleton className="h-4 w-2/3 mb-4" />
+      <Skeleton className="h-10 w-full rounded" />
+    </div>
+  </Card>
+);
+
 const Nightlife = () => {
-  const nightlifeVenues = [
-    {
-      id: "on14",
-      name: "In The Moment",
-      type: "Nightclub",
-      image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      location: "Colombo 03",
-      hours: "10:00 PM - 4:00 AM",
-      description: "A high-energy nightclub with top DJs, premium drinks, and an electric atmosphere perfect for dancing the night away."
-    },
-    {
-      id: "sinclair",
-      name: "La Foresta",
-      type: "Brunch & Bar",
-      image: "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      location: "Colombo 07",
-      hours: "11:00 AM - 2:00 AM",
-      description: "Upscale dining venue that transforms into a vibrant bar in the evenings, featuring live music and craft cocktails."
-    },
-    {
-      id: "b52",
-      name: "Rhythm & Blues",
-      type: "Lounge Bar",
-      image: "https://images.unsplash.com/photo-1500673922987-e212871fec22?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      location: "Mount Lavinia",
-      hours: "7:00 PM - 3:00 AM",
-      description: "A sophisticated lounge with beach views, featuring signature cocktails and regular live music performances."
-    },
-    {
-      id: "h2o",
-      name: "Silk Colombo",
-      type: "Nightclub",
-      image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      location: "Colombo 02",
-      hours: "9:00 PM - 4:00 AM",
-      description: "Premier nightlife destination with international DJs, VIP sections, and a state-of-the-art sound system."
-    }
-  ];
+  const [nightlifeVenues, setNightlifeVenues] = useState<Venue[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [organizers, setOrganizers] = useState<Organizer[]>([]);
+  const [loading, setLoading] = useState({
+    venues: true,
+    events: true,
+    organizers: true
+  });
+  const [error, setError] = useState({
+    venues: null as string | null,
+    events: null as string | null,
+    organizers: null as string | null
+  });
 
-  const partyOrganizers = [
-    {
-      id: "inthemoment",
-      name: "In The Moment (ITM)",
-      type: "Event Organizer",
-      image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      venues: ["Sass Ultra Lounge", "RK Beach", "The Bay 5"],
-      social: "@inthemoment.lk",
-      description: "Known for high-energy beach parties and club events featuring top DJs from around the world."
-    },
-    {
-      id: "subbeat",
-      name: "Sub Beat",
-      type: "Event Organizer",
-      image: "https://images.unsplash.com/photo-1571266752333-31a55580148c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      venues: ["Clique", "Playtrix", "Beach Locations"],
-      social: "@subbeat.lk",
-      description: "Specializes in deep house, techno, and underground music events at top clubs and unique venues."
-    },
-    {
-      id: "lifedance",
-      name: "Life Dance",
-      type: "Event Organizer",
-      image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      venues: ["Mirissa Beach", "Unawatuna", "Bentota"],
-      social: "@lifedancesl",
-      description: "Famous for massive beach raves featuring international and local DJs in Sri Lanka's most beautiful coastal locations."
-    },
-    {
-      id: "crc",
-      name: "Colombo Racing Crew",
-      type: "Event Organizer",
-      image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      venues: ["Icon", "The Library", "Rooftop Venues"],
-      social: "@colomboracingcrew",
-      description: "Luxury parties with a mix of EDM, hip-hop, and commercial hits in Colombo's most exclusive venues."
-    }
-  ];
+  useEffect(() => {
+    const fetchNightlifeVenues = async () => {
+      try {
+        const response = await api.get<{ venues: Venue[] }>('/venues?type=nightclub,bar,lounge&limit=4');
+        
+        if (response.success && response.data?.venues) {
+          setNightlifeVenues(response.data.venues);
+        } else {
+          setError(prev => ({ ...prev, venues: 'Failed to fetch nightlife venues' }));
+        }
+      } catch (err) {
+        console.error('Error fetching nightlife venues:', err);
+        setError(prev => ({ ...prev, venues: 'An error occurred while fetching venues' }));
+      } finally {
+        setLoading(prev => ({ ...prev, venues: false }));
+      }
+    };
 
-  const upcomingEvents = [
-    {
-      name: "Summer Beach Rave",
-      date: "May 15, 2024",
-      image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6a3?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      venue: "RK Beach, Hikkaduwa",
-      organizer: "In The Moment",
-      description: "An all-night beach party featuring international DJs, fire dancers, and beachside bars."
-    },
-    {
-      name: "Underground Techno Night",
-      date: "June 3, 2024",
-      image: "https://images.unsplash.com/photo-1544616326-a85a9a456b7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      venue: "Clique, Colombo",
-      organizer: "Sub Beat",
-      description: "Experience the best of underground techno music with guest DJs from Europe."
-    },
-    {
-      name: "Sunset Sessions",
-      date: "May 22, 2024",
-      image: "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      venue: "The Bay 5, Mount Lavinia",
-      organizer: "Life Dance",
-      description: "A beachfront party starting at sunset and continuing into the night with top local DJs."
-    },
-    {
-      name: "VIP Club Night",
-      date: "June 10, 2024",
-      image: "https://images.unsplash.com/photo-1545128485-c400ce7b23d0?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-      venue: "Icon, Colombo",
-      organizer: "Colombo Racing Crew",
-      description: "An exclusive club night with bottle service, VIP areas, and the best commercial and EDM hits."
+    const fetchEvents = async () => {
+      try {
+        const response = await api.get<{ events: Event[] }>('/events?category=nightlife,party&limit=4');
+        
+        if (response.success && response.data?.events) {
+          setEvents(response.data.events);
+        } else {
+          setError(prev => ({ ...prev, events: 'Failed to fetch events' }));
+        }
+      } catch (err) {
+        console.error('Error fetching events:', err);
+        setError(prev => ({ ...prev, events: 'An error occurred while fetching events' }));
+      } finally {
+        setLoading(prev => ({ ...prev, events: false }));
+      }
+    };
+
+    const fetchOrganizers = async () => {
+      try {
+        const response = await api.get<{ organizers: Organizer[] }>('/organizers?category=nightlife,party&limit=4');
+        
+        if (response.success && response.data?.organizers) {
+          setOrganizers(response.data.organizers);
+        } else {
+          setError(prev => ({ ...prev, organizers: 'Failed to fetch organizers' }));
+        }
+      } catch (err) {
+        console.error('Error fetching organizers:', err);
+        setError(prev => ({ ...prev, organizers: 'An error occurred while fetching organizers' }));
+      } finally {
+        setLoading(prev => ({ ...prev, organizers: false }));
+      }
+    };
+
+    fetchNightlifeVenues();
+    fetchEvents();
+    fetchOrganizers();
+  }, []);
+
+  // Helper functions
+  const getVenueImage = (venue: Venue) => {
+    if (venue.images && venue.images.length > 0) {
+      const mainImage = venue.images.find(img => img.isMain);
+      return mainImage ? mainImage.url : venue.images[0].url;
     }
-  ];
+    return '/placeholders/venue-placeholder.jpg';
+  };
+
+  const getVenueLocation = (venue: Venue) => {
+    if (venue.address?.city) return venue.address.city;
+    if (venue.location) return venue.location;
+    return 'Sri Lanka';
+  };
+
+  const getVenueHours = (venue: Venue) => {
+    if (venue.businessHours?.open && venue.businessHours?.close) {
+      return `${venue.businessHours.open} - ${venue.businessHours.close}`;
+    }
+    return 'Hours not specified';
+  };
+
+  const getEventImage = (event: Event) => {
+    if (event.images && event.images.length > 0) {
+      return event.images[0];
+    }
+    return '/placeholders/event-placeholder.jpg';
+  };
+
+  const getEventLocation = (event: Event) => {
+    if (event.location?.name) return event.location.name;
+    if (event.location?.city) return event.location.city;
+    if (event.location?.address) return event.location.address;
+    return 'Location TBA';
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'TBA';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'TBA';
+    
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const getOrganizerImage = (organizer: Organizer) => {
+    if (organizer.profileImage) return organizer.profileImage;
+    return '/placeholders/organizer-placeholder.jpg';
+  };
+
+  const getOrganizerSocial = (organizer: Organizer) => {
+    if (organizer.socialMedia?.instagram) return `@${organizer.socialMedia.instagram.split('/').pop()}`;
+    if (organizer.socialMedia?.facebook) return organizer.socialMedia.facebook.split('/').pop() || '';
+    return organizer.name;
+  };
 
   return (
     <section id="nightlife" className="py-16 bg-gradient-to-b from-gray-900 to-gray-800 text-white">
@@ -307,9 +401,32 @@ const Nightlife = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {nightlifeVenues.map((venue, index) => (
-            <NightlifeCard key={index} {...venue} />
-          ))}
+          {loading.venues ? (
+            // Show skeletons while loading
+            Array(4).fill(0).map((_, index) => <CardSkeleton key={index} />)
+          ) : error.venues ? (
+            <div className="col-span-4 text-center py-8">
+              <p className="text-red-400">{error.venues}</p>
+            </div>
+          ) : nightlifeVenues.length > 0 ? (
+            // Show actual venues
+            nightlifeVenues.map((venue) => (
+              <NightlifeCard 
+                key={venue._id}
+                id={venue._id}
+                name={venue.name}
+                type={venue.type}
+                image={getVenueImage(venue)}
+                location={getVenueLocation(venue)}
+                hours={getVenueHours(venue)}
+                description={venue.description || 'Experience this amazing venue in Sri Lanka.'}
+              />
+            ))
+          ) : (
+            <div className="col-span-4 text-center py-8">
+              <p className="text-gray-400">No nightlife venues available at the moment</p>
+            </div>
+          )}
         </div>
 
         <div className="mt-20 mb-4">
@@ -331,9 +448,32 @@ const Nightlife = () => {
             Top Event Organizers
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {partyOrganizers.map((organizer, index) => (
-              <PartyOrganizerCard key={index} {...organizer} />
-            ))}
+            {loading.organizers ? (
+              // Show skeletons while loading
+              Array(4).fill(0).map((_, index) => <CardSkeleton key={index} />)
+            ) : error.organizers ? (
+              <div className="col-span-4 text-center py-8">
+                <p className="text-red-400">{error.organizers}</p>
+              </div>
+            ) : organizers.length > 0 ? (
+              // Show actual organizers
+              organizers.map((organizer) => (
+                <PartyOrganizerCard
+                  key={organizer._id}
+                  id={organizer._id}
+                  name={organizer.name}
+                  type="Event Organizer"
+                  image={getOrganizerImage(organizer)}
+                  venues={organizer.venueNames || organizer.venues || ['Various venues']}
+                  social={getOrganizerSocial(organizer)}
+                  description={organizer.description || `${organizer.name} hosts amazing events across Sri Lanka.`}
+                />
+              ))
+            ) : (
+              <div className="col-span-4 text-center py-8">
+                <p className="text-gray-400">No event organizers available at the moment</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -343,9 +483,32 @@ const Nightlife = () => {
             Upcoming Events
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {upcomingEvents.map((event, index) => (
-              <EventCard key={index} {...event} />
-            ))}
+            {loading.events ? (
+              // Show skeletons while loading
+              Array(4).fill(0).map((_, index) => <CardSkeleton key={index} />)
+            ) : error.events ? (
+              <div className="col-span-4 text-center py-8">
+                <p className="text-red-400">{error.events}</p>
+              </div>
+            ) : events.length > 0 ? (
+              // Show actual events
+              events.map((event) => (
+                <EventCard
+                  key={event._id}
+                  id={event._id}
+                  name={event.title}
+                  date={formatDate(event.date)}
+                  image={getEventImage(event)}
+                  venue={getEventLocation(event)}
+                  organizer={event.organizer?.name || 'Eventuraa'}
+                  description={event.description || 'Join us for an unforgettable night of entertainment.'}
+                />
+              ))
+            ) : (
+              <div className="col-span-4 text-center py-8">
+                <p className="text-gray-400">No upcoming events available at the moment</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -366,7 +529,7 @@ const Nightlife = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="text-sm text-gray-300">Pre-book tickets (sold via BookMyShow.lk or at the door)</p>
+              <p className="text-sm text-gray-300">Pre-book tickets through our platform for the best prices</p>
             </div>
             <div className="flex items-start gap-2">
               <div className="mt-1 bg-eventuraa-orange rounded-full p-1.5">
@@ -374,7 +537,7 @@ const Nightlife = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="text-sm text-gray-300">Beach parties are best in Mirissa & Unawatuna (Dec-April)</p>
+              <p className="text-sm text-gray-300">Beach parties are best experienced during the dry season (December-April)</p>
             </div>
           </div>
         </div>

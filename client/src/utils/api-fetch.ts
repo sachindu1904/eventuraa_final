@@ -1,7 +1,7 @@
 import { toast } from '@/components/ui/sonner';
 
 // API base URL configuration - ensure this matches your server
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // Define API response interfaces
 export interface VenueResponseData {
@@ -232,10 +232,12 @@ const api = {
 // Check if the API server is accessible
 export const checkApiConnection = async (): Promise<boolean> => {
   try {
-    console.log(`Checking API connection to: ${API_URL}/health`);
-    const response = await fetch(`${API_URL}/health`);
-    const data = await response.json();
-    return data.status === 'ok';
+    // Just check if the server responds at all
+    const baseUrl = API_URL.substring(0, API_URL.lastIndexOf('/api'));
+    console.log(`Checking API connection to: ${baseUrl}`);
+    const response = await fetch(baseUrl);
+    // Consider any response as successful connection
+    return response.status !== 0; // Status 0 means no connection
   } catch (error) {
     console.error('API connection check failed:', error);
     return false;

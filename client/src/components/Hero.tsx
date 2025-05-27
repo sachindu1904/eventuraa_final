@@ -29,6 +29,7 @@ const Hero = () => {
           <Button className="bg-eventuraa-blue hover:bg-blue-600 text-white px-8 py-6 text-lg rounded-lg">
             Explore Events
           </Button>
+          
           <Button className="bg-eventuraa-purple hover:bg-eventuraa-darkPurple text-white px-8 py-6 text-lg rounded-lg">
             Book Accommodation
           </Button>

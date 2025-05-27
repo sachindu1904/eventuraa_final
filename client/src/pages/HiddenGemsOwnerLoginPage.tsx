@@ -67,7 +67,7 @@ const HiddenGemsOwnerLoginPage: React.FC = () => {
                 <Home className="h-8 w-8 text-white" />
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-800 font-display">Hidden Gems Owner Login</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-800 font-display"> Owner Login</CardTitle>
             <CardDescription className="text-gray-600">
               Access your property management dashboard
             </CardDescription>

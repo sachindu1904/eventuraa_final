@@ -31,6 +31,7 @@ exports.register = async (userData, userType) => {
         user = await User.create({
           name: userData.name,
           email: userData.email,
+          password: userData.password,
           phone: userData.phone || '',
           // Additional user fields if provided
           ...(userData.dateOfBirth && { dateOfBirth: userData.dateOfBirth }),
@@ -42,14 +43,31 @@ exports.register = async (userData, userType) => {
         
       case 'doctor':
         console.log('[AUTH SERVICE] Creating Doctor document...');
-        userModel = Doctor;
         
         // Validate required doctor fields
         if (!userData.regNumber || !userData.specialty) {
           throw new Error('Doctor registration requires regNumber and specialty');
         }
         
+        // First create a User document
+        console.log('[AUTH SERVICE] Creating User document for doctor...');
+        const doctorUser = await User.create({
+          name: userData.name,
+          email: userData.email,
+          password: userData.password,
+          role: 'doctor',
+          phone: userData.phone || '',
+          // Additional user fields if provided
+          ...(userData.dateOfBirth && { dateOfBirth: userData.dateOfBirth }),
+          ...(userData.gender && { gender: userData.gender }),
+          ...(userData.address && { address: userData.address })
+        });
+        console.log(`[AUTH SERVICE] User document created for doctor: ${doctorUser._id}`);
+        
+        // Then create the Doctor document with userId reference
+        userModel = Doctor;
         user = await Doctor.create({
+          userId: doctorUser._id,
           name: userData.name,
           email: userData.email,
           phone: userData.phone || '',
@@ -61,6 +79,10 @@ exports.register = async (userData, userType) => {
           ...(userData.experience && { experience: userData.experience })
         });
         console.log(`[AUTH SERVICE] Doctor document created: ${user._id}`);
+        
+        // Use the User document for credentials, not the Doctor document
+        user = doctorUser;
+        userModel = User; // Set userModel to User for verification
         break;
         
       case 'organizer':
@@ -134,7 +156,7 @@ exports.register = async (userData, userType) => {
       userModel: userType === 'user' 
         ? 'User' 
         : userType === 'doctor' 
-          ? 'Doctor' 
+          ? 'User'  // Changed from 'Doctor' to 'User' since userId now points to User
           : userType === 'organizer'
             ? 'Organizer'
             : 'VenueHost',
@@ -246,13 +268,19 @@ exports.login = async (emailOrPhone, password, userType, regNumber = null) => {
     
     // Additional validation for doctors - check registration number
     if (userType === 'doctor' && regNumber) {
-      const doctor = await Doctor.findById(credentials.userId);
+      // For doctors, find the doctor record by the user's email since credentials.userId now points to User
+      const user = await User.findById(credentials.userId);
+      if (!user) {
+        throw new Error('User record not found');
+      }
+      
+      const doctor = await Doctor.findOne({ email: user.email });
       if (!doctor) {
         throw new Error('Doctor record not found');
       }
       
       if (doctor.regNumber !== regNumber) {
-        console.log(`[AUTH SERVICE] Invalid registration number for doctor: ${credentials.userId}`);
+        console.log(`[AUTH SERVICE] Invalid registration number for doctor: ${user.email}`);
         throw new Error('Invalid registration number');
       }
     }
@@ -277,7 +305,7 @@ exports.login = async (emailOrPhone, password, userType, regNumber = null) => {
         userModel = User;
         break;
       case 'doctor':
-        userModel = Doctor;
+        userModel = User; // For doctors, use User model since credentials.userId points to User
         break;
       case 'organizer':
         userModel = Organizer;

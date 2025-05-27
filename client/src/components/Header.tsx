@@ -1,10 +1,56 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import LanguageSwitcher from './LanguageSwitcher';
+import { LogOut, User } from 'lucide-react';
+
+interface UserData {
+  name: string;
+  email: string;
+  _id: string;
+  // More specific types for additional properties that might be in user data
+  userType?: string;
+  phone?: string;
+  profileImage?: string;
+  role?: string;
+}
 
 const Header = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const userDataStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    
+    if (token && userDataStr) {
+      setIsAuthenticated(true);
+      try {
+        setUserData(JSON.parse(userDataStr));
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    // Clear authentication data
+    localStorage.removeItem('token');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('userType');
+    sessionStorage.removeItem('user');
+    
+    setIsAuthenticated(false);
+    setUserData(null);
+    
+    // Redirect to home
+    navigate('/');
+  };
+
   return (
     <header className="bg-white py-4 shadow-md">
       <div className="container-custom flex items-center justify-between">
@@ -29,6 +75,7 @@ const Header = () => {
                   Nightlife
                 </Link>
               </li>
+              
               <li>
                 <Link to="/hotels" className="text-gray-600 hover:text-gray-800">
                   Hotels
@@ -48,12 +95,32 @@ const Header = () => {
           </nav>
           <div className="flex items-center gap-4 ml-6">
             <LanguageSwitcher />
-            <Link to="/signin">
-              <Button variant="outline">Sign In</Button>
-            </Link>
-            <Link to="/signup" className="hidden md:inline-flex">
-              <Button variant="default">Sign Up</Button>
-            </Link>
+            
+            {isAuthenticated ? (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center">
+                  <User className="h-4 w-4 mr-2 text-gray-600" />
+                  <span className="text-sm text-gray-600">{userData?.name || 'User'}</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2" 
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link to="/signin">
+                  <Button variant="outline">Sign In</Button>
+                </Link>
+                <Link to="/signup" className="hidden md:inline-flex">
+                  <Button variant="default">Sign Up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

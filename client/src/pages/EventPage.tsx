@@ -263,15 +263,20 @@ const EventPage = () => {
   }
   
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-cover bg-center bg-no-repeat" style={{
+      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url('https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80')`,
+      backgroundColor: '#ffffff'
+    }}>
       <Header />
       
       <main className="flex-1">
         {/* Hero Section with search */}
-        <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white py-12 md:py-24">
-          <div className="container mx-auto px-4">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4">Discover Events</h1>
-            <p className="text-xl md:text-2xl mb-8">Find and book the best events in Sri Lanka</p>
+        <div className="bg-cover bg-center bg-no-repeat text-white py-12 md:py-24 relative" style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`
+        }}>
+          <div className="container mx-auto px-4 relative z-10">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-shadow-lg">Discover Events</h1>
+            <p className="text-xl md:text-2xl mb-8 text-shadow-lg">Find and book the best events in Sri Lanka</p>
             
             <EventSearch onSearch={handleFilter} />
           </div>

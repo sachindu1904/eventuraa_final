@@ -1,14 +1,32 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import api from '@/utils/api-fetch';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const EventCard = ({ title, date, location, image, category, price }: {
+interface Event {
+  _id: string;
+  title: string;
+  date: string;
+  location: {
+    name: string;
+    city: string;
+    address: string;
+  };
+  images: string[];
+  category: string;
+  ticketPrice: number;
+  eventType: string;
+}
+
+const EventCard = ({ title, date, location, image, category, price, id }: {
   title: string;
   date: string;
   location: string;
   image: string;
   category: string;
   price: string;
+  id: string;
 }) => {
   return (
     <div className="rounded-xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all border border-gray-100 flex flex-col h-full">
@@ -36,51 +54,103 @@ const EventCard = ({ title, date, location, image, category, price }: {
         </div>
         <div className="mt-auto flex items-center justify-between">
           <div className="font-semibold text-eventuraa-purple">{price}</div>
-          <Button variant="outline" className="text-eventuraa-purple border-eventuraa-purple hover:bg-eventuraa-purple hover:text-white">
-            Book Now
-          </Button>
+          <Link to={`/events/${id}`}>
+            <Button variant="outline" className="text-eventuraa-purple border-eventuraa-purple hover:bg-eventuraa-purple hover:text-white">
+              Book Now
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
   );
 };
 
+const EventSkeleton = () => (
+  <div className="rounded-xl overflow-hidden bg-white shadow-md border border-gray-100 flex flex-col h-full">
+    <div className="relative h-48 overflow-hidden">
+      <Skeleton className="h-full w-full" />
+    </div>
+    <div className="p-5 flex-1 flex flex-col">
+      <Skeleton className="h-6 w-3/4 mb-2" />
+      <Skeleton className="h-4 w-1/2 mb-2" />
+      <Skeleton className="h-4 w-2/3 mb-4" />
+      <div className="mt-auto flex items-center justify-between">
+        <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-9 w-24" />
+      </div>
+    </div>
+  </div>
+);
+
 const FeaturedEvents = () => {
-  // Sample event data
-  const events = [
-    {
-      title: "Kandy Esala Perahera",
-      date: "Aug 10-20, 2025",
-      location: "Kandy",
-      image: "https://images.unsplash.com/photo-1625140574538-40bc923f0112?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8c3JpJTIwbGFua2ElMjBwZXJhaGVyYXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60",
-      category: "Cultural",
-      price: "LKR 3,500"
-    },
-    {
-      title: "Surfing Weekend",
-      date: "Jun 15-17, 2025",
-      location: "Arugam Bay",
-      image: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3VyZnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60",
-      category: "Adventure",
-      price: "LKR 8,000"
-    },
-    {
-      title: "Traditional Cooking Class",
-      date: "May 25, 2025",
-      location: "Colombo",
-      image: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8c3JpJTIwbGFua2ElMjBmb29kfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60",
-      category: "Culinary",
-      price: "LKR 2,500"
-    },
-    {
-      title: "Tea Plantation Tour",
-      date: "Jun 5, 2025",
-      location: "Nuwara Eliya",
-      image: "https://images.unsplash.com/photo-1576826244583-37e71b99fe8a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHRlYSUyMHBsYW50YXRpb258ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60",
-      category: "Cultural",
-      price: "LKR 4,000"
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get<{ events: Event[] }>('/events?featured=true&limit=4');
+        
+        if (response.success && response.data?.events) {
+          setEvents(response.data.events);
+        } else {
+          setError('Failed to fetch events');
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        setError('An error occurred while fetching events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  // Format date function
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'TBA';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'TBA';
+    
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  // Get location display
+  const getLocation = (event: Event) => {
+    if (event.location?.name) return event.location.name;
+    if (event.location?.city) return event.location.city;
+    if (event.location?.address) return event.location.address;
+    return 'Location TBA';
+  };
+
+  // Get image URL
+  const getImageUrl = (event: Event) => {
+    if (event.images && event.images.length > 0 && event.images[0]) {
+      return event.images[0];
     }
-  ];
+    return '/placeholders/event-placeholder.jpg';
+  };
+
+  // Get category
+  const getCategory = (event: Event) => {
+    return event.category || event.eventType || 'Event';
+  };
+
+  // Format price
+  const formatPrice = (event: Event) => {
+    if (typeof event.ticketPrice === 'number') {
+      return `LKR ${event.ticketPrice.toLocaleString()}`;
+    }
+    return 'Price TBA';
+  };
 
   return (
     <section id="events" className="bg-gray-50 py-16">
@@ -92,16 +162,44 @@ const FeaturedEvents = () => {
           </p>
         </div>
 
+        {error && (
+          <div className="text-center text-red-500 mb-8">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {events.map((event, index) => (
-            <EventCard key={index} {...event} />
-          ))}
+          {loading ? (
+            // Show skeletons while loading
+            Array(4).fill(0).map((_, index) => <EventSkeleton key={index} />)
+          ) : events.length > 0 ? (
+            // Show real events
+            events.map((event) => (
+              <EventCard 
+                key={event._id}
+                id={event._id}
+                title={event.title}
+                date={formatDate(event.date)}
+                location={getLocation(event)}
+                image={getImageUrl(event)}
+                category={getCategory(event)}
+                price={formatPrice(event)}
+              />
+            ))
+          ) : (
+            // Fallback for no events
+            <div className="col-span-4 text-center py-8">
+              <p className="text-gray-500">No featured events available at the moment</p>
+            </div>
+          )}
         </div>
 
         <div className="text-center mt-12">
-          <Button className="bg-eventuraa-purple hover:bg-eventuraa-darkPurple">
-            View All Events
-          </Button>
+          <Link to="/events">
+            <Button className="bg-eventuraa-purple hover:bg-eventuraa-darkPurple">
+              View All Events
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

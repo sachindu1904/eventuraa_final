@@ -41,7 +41,7 @@ const MedicalServices = () => {
 
   const showPrivacyInfo = () => {
     setShowPrivacyPopup(true);
-    setTimeout(() => setShowPrivacyPopup(false), 5000);
+    setTimeout(() => setShowPrivacyPopup(false), 5001);
   };
 
   return (
@@ -157,6 +157,7 @@ const MedicalServices = () => {
               isSelected={selectedCategory === 'substance'}
               onClick={() => setSelectedCategory('substance')}
             />
+            
             <CategoryCard 
               title="Infections" 
               description="Treatment for various types of infections"

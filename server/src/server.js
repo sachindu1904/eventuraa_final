@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -10,6 +10,8 @@ const venueHostRoutes = require('./routes/venueHostRoutes');
 const venueRoutes = require('./routes/venueRoutes');
 const ticketPurchaseRoutes = require('./routes/ticketPurchaseRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const doctorRoutes = require('./routes/doctorRoutes');
+const userRoutes = require('./routes/userRoutes');
 const Event = require('./models/Event');
 
 // Initialize express app
@@ -48,6 +50,8 @@ app.use('/api/venue-host', venueHostRoutes);
 app.use('/api/venues', venueRoutes);
 app.use('/api/tickets', ticketPurchaseRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/doctors', doctorRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -135,7 +139,7 @@ app.get('/api/check-db', async (req, res) => {
     }
     
     // Check our main models
-    const modelNames = ['User', 'Doctor', 'Organizer', 'Credentials'];
+    const modelNames = ['User', 'Doctor', 'Organizer', 'Credentials', 'Appointment'];
     const modelStats = {};
     
     for (const name of modelNames) {

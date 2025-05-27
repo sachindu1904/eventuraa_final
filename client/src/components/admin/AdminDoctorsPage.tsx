@@ -109,6 +109,22 @@ const AdminDoctorsPage: React.FC = () => {
     fetchDoctors(); // Refresh the doctors list
   };
 
+  const handleVerifyDoctor = async (doctorId: string, isVerified: boolean) => {
+    try {
+      const endpoint = isVerified ? 'unverify' : 'verify';
+      const action = isVerified ? 'revoked' : 'verified';
+      
+      await api.put(`/admin/doctors/${doctorId}/${endpoint}`);
+      
+      toast.success(`Doctor verification ${action} successfully`);
+      fetchDoctors(); // Refresh the doctors list
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'An unknown error occurred';
+      toast.error(`Error updating verification: ${errorMessage}`);
+      console.error('Error updating doctor verification:', err);
+    }
+  };
+
   const openDoctorProfile = (doctorId: string) => {
     setSelectedDoctorId(doctorId);
     setIsProfileModalOpen(true);
@@ -217,10 +233,15 @@ const AdminDoctorsPage: React.FC = () => {
                             <FileText className="mr-2 h-4 w-4" />
                             <span>View Credentials</span>
                           </DropdownMenuItem>
-                          {!doctor.verificationStatus.isVerified && (
-                            <DropdownMenuItem>
+                          {!doctor.verificationStatus.isVerified ? (
+                            <DropdownMenuItem onClick={() => handleVerifyDoctor(doctor._id, false)}>
                               <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
                               <span className="text-green-600">Verify Doctor</span>
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleVerifyDoctor(doctor._id, true)}>
+                              <XCircle className="mr-2 h-4 w-4 text-red-600" />
+                              <span className="text-red-600">Revoke Verification</span>
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />

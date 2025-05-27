@@ -15,8 +15,10 @@ import HotelDetailPage from "./pages/HotelDetailPage";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import MedicalPage from "./pages/MedicalPage";
+import MedicalBookingPage from "./pages/MedicalBookingPage";
 import DoctorLoginPage from "./pages/DoctorLoginPage";
 import DoctorPortal from "./pages/DoctorPortal";
+import FindDoctors from "./pages/FindDoctors";
 import OrganizerLoginPage from "./pages/OrganizerLoginPage";
 import OrganizerPortal from "./pages/OrganizerPortal";
 import AdminLoginPage from "./pages/AdminLoginPage";
@@ -54,8 +56,10 @@ const App = () => (
           <Route path="/hotels/:hotelId" element={<HotelDetailPage />} />
           <Route path="/restaurants" element={<RestaurantListPage />} />
           <Route path="/medical" element={<MedicalPage />} />
+          <Route path="/medical/book/:doctorId" element={<MedicalBookingPage />} />
           <Route path="/doctor-login" element={<DoctorLoginPage />} />
           <Route path="/doctor-portal" element={<DoctorPortal />} />
+          <Route path="/find-doctors" element={<FindDoctors />} />
           <Route path="/organizer-login" element={<OrganizerLoginPage />} />
           <Route path="/organizer-portal/*" element={<OrganizerPortal />} />
           <Route path="/admin-login" element={<AdminLoginPage />} />

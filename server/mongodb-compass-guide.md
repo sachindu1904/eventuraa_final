@@ -43,7 +43,7 @@ Once you've successfully connected and can see your data:
 
 1. Try creating a user through the API:
    ```
-   POST http://localhost:5000/api/auth/register
+   POST http://localhost:5001/api/auth/register
    
    {
      "userType": "user",
